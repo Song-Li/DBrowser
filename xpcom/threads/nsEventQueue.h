@@ -33,6 +33,12 @@ public:
   void PutEvent(already_AddRefed<nsIRunnable>&& aEvent,
                 MutexAutoLock& aProofOfLock);
 
+  //SECLAB BEGIN 10/17/2016
+  void PutEvent(nsIRunnable* aEvent, MutexAutoLock& aProofOfLock, uint64_t expTime);
+  void PutEvent(already_AddRefed<nsIRunnable>&& aEvent,
+                MutexAutoLock& aProofOfLock, uint64_t expTime);
+  //SECLAB END
+
   // This method gets an event from the event queue.  If mayWait is true, then
   // the method will block the calling thread until an event is available.  If
   // the event is null, then the method returns immediately indicating whether
@@ -42,8 +48,13 @@ public:
   bool GetEvent(bool aMayWait, nsIRunnable** aEvent,
                 MutexAutoLock& aProofOfLock);
 
+  //SECLAB BEGIN 10/17/2016
+  bool GetEvent(bool aMayWait, nsIRunnable** aEvent,
+                MutexAutoLock& aProofOfLock, uint64_t* expTime);
+  //SECLAB END
+
   //SECLAB Tue 18 Oct 2016 11:19:12 AM EDT START
-  //This function is used for find a flag runnable and swap this flag runnable with a 
+  //This function is used for find a flag runnable and swap this flag runnable with a
   //real runnable. This function will work together with GetFlag() function
   bool SecSwapRunnable(nsIRunnable* runnable, uint64_t expTime, MutexAutoLock& aProofOfLock);
   //SECLAB Tue 18 Oct 2016 11:20:10 AM EDT END
