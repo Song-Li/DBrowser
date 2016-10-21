@@ -1,3 +1,7 @@
+This is used for the development of Dbrowser(deterministic browser)
+Copyed from Firefox in github
+
+
 An explanation of the Mozilla Source Code Directory Structure and links to
 project pages with documentation can be found at:
 
