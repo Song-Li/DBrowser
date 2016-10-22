@@ -7,6 +7,10 @@
 #include "PerformanceWorker.h"
 #include "WorkerPrivate.h"
 
+//SECLAB BEGIN 10/03/2016
+#include "../../js/src/vm/Counter.h"
+//SECLAB END
+
 namespace mozilla {
 namespace dom {
 
@@ -26,6 +30,11 @@ PerformanceWorker::~PerformanceWorker()
 DOMHighResTimeStamp
 PerformanceWorker::Now() const
 {
+
+  //SECLAB BEGIN 10/21/2016
+  return get_counter();
+  //SECLAB END
+
   TimeDuration duration =
     TimeStamp::Now() - mWorkerPrivate->NowBaseTimeStamp();
   return RoundTime(duration.ToMilliseconds());
