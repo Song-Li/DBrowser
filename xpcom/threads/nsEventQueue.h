@@ -53,6 +53,15 @@ public:
                 MutexAutoLock& aProofOfLock, uint64_t* expTime);
   //SECLAB END
 
+  //SECLAB Sat 22 Oct 2016 03:05:10 PM EDT START
+  bool getIsMain() {
+    return mIsMain;
+  }
+  bool setIsMain(bool aIsMain) {
+    return mIsMain = aIsMain;
+  }
+  //SECLAB Sat 22 Oct 2016 03:06:43 PM EDT END
+
   //SECLAB Tue 18 Oct 2016 11:19:12 AM EDT START
   //This function is used for find a flag runnable and swap this flag runnable with a
   //real runnable. This function will work together with GetFlag() function
@@ -75,7 +84,13 @@ public:
   size_t Count(MutexAutoLock&);
 
 private:
+
+
+  //SECLAB Sat 22 Oct 2016 03:06:53 PM EDT START
+  bool mIsMain = false;
+  //SECLAB Sat 22 Oct 2016 03:06:55 PM EDT END
   //SECLAB Tue 18 Oct 2016 11:23:11 AM EDT START
+
   nsIRunnable** GetFlag(const uint64_t expTime) {
     Page* head = mHead;
     int offset = mOffsetHead;
