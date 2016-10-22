@@ -687,7 +687,27 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
       NS_WARNING("An event was posted to a thread that will never run it (rejected)");
       return NS_ERROR_UNEXPECTED;
     }
-    queue->PutEvent(event.take(), lock);
+
+    //SECLAB BEGIN 10/21/2016
+    uint64_t temExpTime=0;
+    nsIThread* currentIThread = NS_GetCurrentThread();
+
+    temExpTime = ((nsThread*) currentIThread)->expTime;
+    //temExpTime = get_counter();
+    //if(temExpTime == 0) temExpTime = get_counter();
+
+    if(((nsThread*) currentIThread)->mIsMainThread == MAIN_THREAD && mIsMainThread != MAIN_THREAD){
+      //temExpTime += 10;
+    }
+
+    if(((nsThread*) currentIThread)->mIsMainThread == MAIN_THREAD && mIsMainThread == MAIN_THREAD){
+      //temExpTime = 0;
+    }
+
+    queue->PutEvent(event.take(), lock, temExpTime);
+
+    //queue->PutEvent(event.take(), lock);
+    //SECLAB END
 
     // Make sure to grab the observer before dropping the lock, otherwise the
     // event that we just placed into the queue could run and eventually delete
@@ -1075,6 +1095,9 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       if (MAIN_THREAD == mIsMainThread) {
         this->expTime=get_counter()+10000;
       }
+      /*else{
+        this->expTime=get_counter();
+      }*/
       //SECLAB END
 
       event->Run();

@@ -1682,12 +1682,16 @@ Interpret(JSContext* cx, RunState& state)
      * will enable interrupts, and activation.opMask() is or'd with the opcode
      * to implement a simple alternate dispatch.
      */
+
+//SECLAB BEGIN 10/21/2016
 #define ADVANCE_AND_DISPATCH(N)                                               \
     JS_BEGIN_MACRO                                                            \
+        inc_counter(1);                                                       \
         REGS.pc += (N);                                                       \
         SANITY_CHECKS();                                                      \
         DISPATCH_TO(*REGS.pc | activation.opMask());                          \
     JS_END_MACRO
+//SECLAB END
 
    /*
     * Shorthand for the common sequence at the end of a fixed-size opcode.

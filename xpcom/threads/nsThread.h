@@ -48,6 +48,8 @@ public:
     NOT_MAIN_THREAD
   };
 
+  MainThreadFlag mIsMainThread;
+
   nsThread(MainThreadFlag aMainThread, uint32_t aStackSize);
 
   // Initialize this as a wrapper for a new PRThread.
@@ -248,7 +250,7 @@ protected:
   bool mShutdownRequired;
   // Set to true when events posted to this thread will never run.
   bool mEventsAreDoomed;
-  MainThreadFlag mIsMainThread;
+  //MainThreadFlag mIsMainThread;
 };
 
 #if defined(XP_UNIX) && !defined(ANDROID) && !defined(DEBUG) && HAVE_UALARM \
