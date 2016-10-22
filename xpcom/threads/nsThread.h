@@ -38,6 +38,10 @@ public:
   NS_DECL_NSISUPPORTSPRIORITY
   using nsIEventTarget::Dispatch;
 
+  //SECLAB BEGIN 10/21/2016
+  uint64_t expTime=0;
+  //SECLAB END
+
   enum MainThreadFlag
   {
     MAIN_THREAD,
@@ -138,6 +142,29 @@ protected:
       , mQueue(aLock)
     {
     }
+
+    //SECLAB BEGIN 10/17/2016
+    bool GetEvent(bool aMayWait, nsIRunnable** aEvent,
+                  mozilla::MutexAutoLock& aProofOfLock, uint64_t* expectedEndTime)
+    {
+      return mQueue.GetEvent(aMayWait, aEvent, aProofOfLock, expectedEndTime);
+    }
+
+    void PutEvent(nsIRunnable* aEvent, mozilla::MutexAutoLock& aProofOfLock, uint64_t expectedEndTime)
+    {
+      mQueue.PutEvent(aEvent, aProofOfLock, expectedEndTime);
+    }
+
+    void PutEvent(already_AddRefed<nsIRunnable> aEvent,
+                  mozilla::MutexAutoLock& aProofOfLock, uint64_t expectedEndTime)
+    {
+      mQueue.PutEvent(mozilla::Move(aEvent), aProofOfLock,expectedEndTime);
+    }
+
+    bool SecSwapRunnable(nsIRunnable* runnable, uint64_t expTime, mozilla::MutexAutoLock& aProofOfLock){
+      return mQueue.SecSwapRunnable(runnable, expTime, aProofOfLock);
+    }
+    //SECLAB END
 
     bool GetEvent(bool aMayWait, nsIRunnable** aEvent,
                   mozilla::MutexAutoLock& aProofOfLock)
