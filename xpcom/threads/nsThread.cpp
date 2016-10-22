@@ -37,6 +37,13 @@
 #include "nsThreadSyncDispatch.h"
 #include "LeakRefPtr.h"
 
+//SECLAB BEGIN 10/03/2016
+#include "nsThreadUtils.h"
+#include "../../js/src/vm/Counter.h"
+#include "../../docshell/base/nsDocShell.h"
+#include <typeinfo>
+//SECLAB END
+
 #ifdef MOZ_CRASHREPORTER
 #include "nsServiceManagerUtils.h"
 #include "nsICrashReporter.h"
@@ -1042,10 +1049,18 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
     // also do work.
 
     // If we are shutting down, then do not wait for new events.
+
+    uint64_t* temExpTime=(uint64_t*) malloc(sizeof(uint64_t));
+
     nsCOMPtr<nsIRunnable> event;
     {
       MutexAutoLock lock(mLock);
-      mEvents->GetEvent(reallyWait, getter_AddRefs(event), lock);
+      //mEvents->GetEvent(reallyWait, getter_AddRefs(event), lock);
+
+      //SECLAB BEGIN 10/17/2016
+      mEvents->GetEvent(reallyWait, getter_AddRefs(event), lock, temExpTime);
+      //SECLAB END
+
     }
 
     *aResult = (event.get() != nullptr);
@@ -1055,6 +1070,13 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       if (MAIN_THREAD == mIsMainThread) {
         HangMonitor::NotifyActivity();
       }
+
+      //SECLAB BEGIN 10/21/2016
+      if (MAIN_THREAD == mIsMainThread) {
+        this->expTime=get_counter()+10000;
+      }
+      //SECLAB END
+
       event->Run();
     } else if (aMayWait) {
       MOZ_ASSERT(ShuttingDown(),

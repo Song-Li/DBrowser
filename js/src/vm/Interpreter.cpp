@@ -57,6 +57,10 @@
 #include "vm/Probes-inl.h"
 #include "vm/Stack-inl.h"
 
+/* CSE403-BEGIN : include counter.h*/
+#include "Counter.h"
+/* CSE403-END */
+
 using namespace js;
 using namespace js::gc;
 
@@ -65,6 +69,45 @@ using mozilla::DebugOnly;
 using mozilla::NumberEqualsInt32;
 using mozilla::PodCopy;
 using JS::ForOfIterator;
+
+//SECLAB BEGIN 10/21/2016
+volatile uint64_t counter = 0;
+
+uint64_t jsThread=0;
+
+uint64_t getJSThread(){
+    return jsThread;
+}
+
+void inc_counter(uint64_t args) {
+    //printf("JS thread : %ld\n",pthread_self());
+    if(jsThread==0){
+      jsThread=pthread_self();
+      printf("jsThread: %lx\n",jsThread);
+    }
+    uint64_t c = (uint64_t)args;
+    counter += c;
+    JS_COUNTER_LOG("counter %i inc %i", counter, c);
+}
+
+uint64_t get_counter(void) {
+    JS_COUNTER_LOG("counter : %i", __FUNCTION__, counter);
+    return counter;
+}
+
+void set_counter(uint64_t time) {
+    JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
+    counter=time;
+}
+
+void reset_counter() {
+	counter = 1;
+}
+
+uint64_t get_scaled_counter(uint64_t args) {
+	return counter/args;
+}
+/*SECLAB-END*/
 
 template <bool Eq>
 static MOZ_ALWAYS_INLINE bool
