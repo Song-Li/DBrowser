@@ -1095,9 +1095,6 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       if (MAIN_THREAD == mIsMainThread) {
         this->expTime=get_counter()+10000;
       }
-      /*else{
-        this->expTime=get_counter();
-      }*/
       //SECLAB END
 
       event->Run();
