@@ -603,6 +603,7 @@ nsThread::nsThread(MainThreadFlag aMainThread, uint32_t aStackSize)
   , mShutdownRequired(false)
   , mEventsAreDoomed(false)
   , mIsMainThread(aMainThread)
+  , mFlagLock("nsThread.mFlagLock")
 {
 }
 
@@ -691,20 +692,23 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     //SECLAB BEGIN 10/21/2016
     mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
     uint64_t temExpTime=0;
-    nsIThread* currentIThread = NS_GetCurrentThread();
     nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
     bool put = true;
 
     if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
       if(currentThread->expTime > 1000000){
+        if(getFlag()){
+          printf("release: %ld\n",currentThread->expTime);
+          setFlag(false);
+        }
         if(flag && flagExpTime == currentThread->expTime){
           printf("release: %ld\n",currentThread->expTime);
           flag = false;
           printf("change flag: %ld\n",flag);
         }
-        temExpTime = ((nsThread*) currentIThread)->expTime;
+        temExpTime = currentThread->expTime;
         bool s = mEventsRoot.SecSwapRunnable(event.get(), temExpTime, lock);
-        printf("swap: %ld,%d\n",currentThread->expTime,s);
+        //printf("swap: %ld,%d\n",currentThread->expTime,s);
         put = false;
       }
     }
@@ -1120,18 +1124,17 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       //SECLAB BEGIN 10/21/2016
 
       nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
-      bool run = true;
 
       if (MAIN_THREAD == mIsMainThread) {
         if(*isFlag && *temExpTime > 1000000){
-          flag = true;
+          setFlag(true);
           flagExpTime = *temExpTime;
-          //run = false;
           printf("block: %ld\n",*temExpTime);
           int i=0;
-          //while(flag){
-          //  if(i++ > 1e8)break;
-          //}
+          bool temFlag = getFlag();
+          while(temFlag){
+            temFlag = getFlag();
+          }
           printf("unlock: %ld\n",*temExpTime);
         }
         this->expTime = (get_counter()+100);
@@ -1142,7 +1145,7 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       }
       //SECLAB END
 
-      if(run)event->Run();
+      event->Run();
     } else if (aMayWait) {
       MOZ_ASSERT(ShuttingDown(),
                  "This should only happen when shutting down");
@@ -1428,3 +1431,20 @@ nsThread::nsNestedEventTarget::IsOnCurrentThread(bool* aResult)
 {
   return mThread->IsOnCurrentThread(aResult);
 }
+
+//SECLAB BEGIN 10/23/2016
+bool
+nsThread::setFlag(bool aFlag)
+{
+  MutexAutoLock lock(mFlagLock);
+  flag = aFlag;
+  return flag;
+}
+
+bool
+nsThread::getFlag()
+{
+  MutexAutoLock lock(mFlagLock);
+  return flag;
+}
+//SECLAB END

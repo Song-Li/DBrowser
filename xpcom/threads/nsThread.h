@@ -41,8 +41,6 @@ public:
   //SECLAB BEGIN 10/21/2016
   uint64_t expTime=0;
 
-  bool flag=false;
-
   uint64_t flagExpTime=0;
   //SECLAB END
 
@@ -246,6 +244,16 @@ protected:
   // using mObserver and mEvents on the thread itself.  When calling PutEvent
   // on mEvents, we have to hold the lock to synchronize with PopEventQueue.
   mozilla::Mutex mLock;
+
+  //SECLAB BEGIN 10/23/2016
+  mozilla::Mutex mFlagLock;
+  bool flag=false;
+
+  bool setFlag(bool aFlag);
+
+  bool getFlag();
+
+  //SECLAB END
 
   nsCOMPtr<nsIThreadObserver> mObserver;
   mozilla::CycleCollectedJSRuntime* mScriptObserver;
