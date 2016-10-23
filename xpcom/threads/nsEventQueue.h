@@ -64,7 +64,7 @@ public:
 
   //SECLAB Tue 18 Oct 2016 11:19:12 AM EDT START
   //This function is used for find a flag runnable and swap this flag runnable with a
-  //real runnable. This function will work together with GetFlag() function
+  //real runnable. This function will work together with GetSetFlag() function
   bool SecSwapRunnable(nsIRunnable* runnable, uint64_t expTime, MutexAutoLock& aProofOfLock);
   //SECLAB Tue 18 Oct 2016 11:20:10 AM EDT END
 
@@ -91,7 +91,7 @@ private:
   //SECLAB Sat 22 Oct 2016 03:06:55 PM EDT END
   //SECLAB Tue 18 Oct 2016 11:23:11 AM EDT START
 
-  nsIRunnable** GetFlag(const uint64_t expTime) {
+  nsIRunnable** GetSetFlag(const uint64_t expTime, int flag) {
     Page* head = mHead;
     int offset = mOffsetHead;
     while(head != mTail && offset != mOffsetTail) {
@@ -100,6 +100,9 @@ private:
         head = head->mNext;
       }else {
         if(head->mExpTime[offset] == expTime) {
+          //SECLAB Sun 23 Oct 2016 04:41:10 PM EDT START
+          head->mExpTime[offset] = (expTime >> 1 << 1 | flag);
+          //SECLAB Sun 23 Oct 2016 04:41:13 PM EDT END
           return &(head->mEvents[offset]);
         }
         offset ++;
