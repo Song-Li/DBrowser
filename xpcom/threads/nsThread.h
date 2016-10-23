@@ -158,7 +158,7 @@ protected:
                   mozilla::MutexAutoLock& aProofOfLock, uint64_t* expectedEndTime, bool* isFlag)
     {
       bool result = mQueue.GetEvent(aMayWait, aEvent, aProofOfLock, expectedEndTime);
-      *isFlag = *expectedEndTime & 1;
+      *isFlag = (*expectedEndTime & 1) == 1;
       *expectedEndTime = *expectedEndTime >> 1;
       return result;
     }

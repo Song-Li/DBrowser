@@ -91,7 +91,7 @@ private:
   //SECLAB Sat 22 Oct 2016 03:06:55 PM EDT END
   //SECLAB Tue 18 Oct 2016 11:23:11 AM EDT START
 
-  nsIRunnable** GetFlag(const uint64_t expTime) {
+  nsIRunnable** GetFlag(const uint64_t expTime, nsIRunnable** runnable, uint64_t* timeLocation) {
     Page* head = mHead;
     int offset = mOffsetHead;
     while(head != mTail && offset != mOffsetTail) {
@@ -100,6 +100,8 @@ private:
         head = head->mNext;
       }else {
         if(head->mExpTime[offset] == expTime) {
+          runnable = &(head->mEvents[offset]);
+          timeLocation = &(head->mExpTime[offset]);
           return &(head->mEvents[offset]);
         }
         offset ++;

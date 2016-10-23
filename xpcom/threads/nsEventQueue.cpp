@@ -125,13 +125,17 @@ nsEventQueue::PutEvent(already_AddRefed<nsIRunnable>&& aRunnable,
 //SECLAB Tue 18 Oct 2016 11:36:03 AM EDT START
 bool
 nsEventQueue::SecSwapRunnable(nsIRunnable* runnable, const uint64_t expTime, MutexAutoLock& aProofOfLock) {
-  nsIRunnable** queueLocation = GetFlag(expTime << 1 | 1);
+  uint64_t* timeLocation;
+  nsIRunnable** queueLocation;
+  GetFlag(expTime << 1 | 1, queueLocation, timeLocation);
+  printf("swap %ld\n", expTime << 1 | 1);
   if(queueLocation) {
     *queueLocation = runnable;
+    *timeLocation = expTime << 1;
     return true;
   }
   else {
-    PutEvent(runnable, aProofOfLock);
+    PutEvent(runnable, aProofOfLock, expTime << 1);
     return false;
   }
 
@@ -225,6 +229,8 @@ void
 nsEventQueue::PutEvent(already_AddRefed<nsIRunnable>&& aRunnable,
                        MutexAutoLock& aProofOfLock, uint64_t expTime)
 {
+  if(expTime & 1 ==1)printf("put flag %ld\n",expTime);
+
   //SECLAB Thu 13 Oct 2016 03:08:32 PM EDT START
   nsIRunnable* runnable = aRunnable.take();
   //runnable->expTime = secCounter ++;
