@@ -1,0 +1,9 @@
+CACHE MANIFEST
+CACHE:
+TestFile/50k.html
+TestFile/60k.html
+TestFile/150k.html
+TestFile/250k.html
+
+NETWORK:
+*
