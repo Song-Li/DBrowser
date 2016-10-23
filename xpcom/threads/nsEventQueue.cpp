@@ -196,7 +196,7 @@ nsEventQueue::GetEvent(bool aMayWait, nsIRunnable** aResult,
     LOG(("EVENTQ(%p): wait end\n", this));
   }
 
-  GetRunNow();
+  if(getIsMain()) GetRunNow();
 
   if (aResult) {
     MOZ_ASSERT(mOffsetHead < EVENTS_PER_PAGE);

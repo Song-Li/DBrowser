@@ -689,22 +689,36 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     }
 
     //SECLAB BEGIN 10/21/2016
+    //mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
     uint64_t temExpTime=0;
     nsIThread* currentIThread = NS_GetCurrentThread();
+    nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
+    bool put = true;
 
-    temExpTime = ((nsThread*) currentIThread)->expTime;
-    //temExpTime = get_counter();
-    //if(temExpTime == 0) temExpTime = get_counter();
-
-    if(((nsThread*) currentIThread)->mIsMainThread == MAIN_THREAD && mIsMainThread != MAIN_THREAD){
-      //temExpTime += 10;
+    if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
+      if(currentThread->expTime != 0){
+        if(flag && flagExpTime == currentThread->expTime){
+          printf("release: %ld\n",currentThread->expTime);
+          flag = false;
+          printf("change flag: %ld\n",flag);
+        }
+        temExpTime = ((nsThread*) currentIThread)->expTime;
+        //mEventsRoot.SecSwapRunnable(event.get(), temExpTime, lock);
+        //put = false;
+      }
+    }
+    else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread == MAIN_THREAD){
+      temExpTime = get_counter();
+    }
+    else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread != MAIN_THREAD){
+      //currentThread->putFlag(currentThread->expTime);
+      temExpTime = currentThread->expTime;
+    }
+    else{
+      temExpTime = currentThread->expTime;
     }
 
-    if(((nsThread*) currentIThread)->mIsMainThread == MAIN_THREAD && mIsMainThread == MAIN_THREAD){
-      //temExpTime = 0;
-    }
-
-    queue->PutEvent(event.take(), lock, temExpTime);
+    queue->PutEvent(event.take(), lock, temExpTime, false);
 
     //queue->PutEvent(event.take(), lock);
     //SECLAB END
@@ -722,6 +736,16 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
 
   return NS_OK;
 }
+
+//SECLAB BEGIN 10/22/2016
+void nsThread::putFlag(uint64_t expTime){
+  if( mIsMainThread != MAIN_THREAD || expTime < 1000000)return;
+  printf("put flag: %ld\n", expTime);
+  MutexAutoLock lock(mLock);
+  nsIRunnable* flagEvent = new Runnable();
+  mEventsRoot.PutEvent(flagEvent, lock, expTime, true);
+}
+//SECLAB END
 
 nsresult
 nsThread::DispatchInternal(already_AddRefed<nsIRunnable> aEvent, uint32_t aFlags,
@@ -1071,6 +1095,7 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
     // If we are shutting down, then do not wait for new events.
 
     uint64_t* temExpTime=(uint64_t*) malloc(sizeof(uint64_t));
+    bool* isFlag = (bool*) malloc(sizeof(bool));
 
     nsCOMPtr<nsIRunnable> event;
     {
@@ -1078,7 +1103,7 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       //mEvents->GetEvent(reallyWait, getter_AddRefs(event), lock);
 
       //SECLAB BEGIN 10/17/2016
-      mEvents->GetEvent(reallyWait, getter_AddRefs(event), lock, temExpTime);
+      mEvents->GetEvent(reallyWait, getter_AddRefs(event), lock, temExpTime, isFlag);
       //SECLAB END
 
     }
@@ -1092,8 +1117,25 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       }
 
       //SECLAB BEGIN 10/21/2016
+
+      nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
+
       if (MAIN_THREAD == mIsMainThread) {
-        this->expTime=get_counter()+10000;
+        if(*isFlag){
+          flag = true;
+          flagExpTime = *temExpTime;
+          printf("block: %ld\n",*temExpTime);
+          int i=0;
+          //while(flag){
+          //  if(i++ > 1e8)break;
+          //}
+          printf("unlock: %ld\n",*temExpTime);
+        }
+        this->expTime = (get_counter()+100);
+      }
+      else{
+        if(*temExpTime != 0)this->expTime = *temExpTime;
+        else this->expTime = get_counter();
       }
       //SECLAB END
 
@@ -1251,6 +1293,7 @@ nsThread::PushEventQueue(nsIEventTarget** aResult)
 
   {
     MutexAutoLock lock(mLock);
+
     queue->mNext = mEvents;
     mEvents = queue;
   }

@@ -40,6 +40,10 @@ public:
 
   //SECLAB BEGIN 10/21/2016
   uint64_t expTime=0;
+
+  bool flag=false;
+
+  uint64_t flagExpTime=0;
   //SECLAB END
 
   enum MainThreadFlag
@@ -86,6 +90,10 @@ public:
   void ShutdownComplete(NotNull<struct nsThreadShutdownContext*> aContext);
 
   void WaitForAllAsynchronousShutdowns();
+
+  //SECLAB BEGIN 10/22/2016
+  void putFlag(uint64_t expTime);
+  //SECLAB END
 
 #ifdef MOZ_CRASHREPORTER
   enum class ShouldSaveMemoryReport
@@ -147,24 +155,35 @@ protected:
 
     //SECLAB BEGIN 10/17/2016
     bool GetEvent(bool aMayWait, nsIRunnable** aEvent,
-                  mozilla::MutexAutoLock& aProofOfLock, uint64_t* expectedEndTime)
+                  mozilla::MutexAutoLock& aProofOfLock, uint64_t* expectedEndTime, bool* isFlag)
     {
-      return mQueue.GetEvent(aMayWait, aEvent, aProofOfLock, expectedEndTime);
+      bool result = mQueue.GetEvent(aMayWait, aEvent, aProofOfLock, expectedEndTime);
+      *isFlag = *expectedEndTime & 1;
+      *expectedEndTime = *expectedEndTime >> 1;
+      return result;
     }
 
-    void PutEvent(nsIRunnable* aEvent, mozilla::MutexAutoLock& aProofOfLock, uint64_t expectedEndTime)
+    void PutEvent(nsIRunnable* aEvent, mozilla::MutexAutoLock& aProofOfLock, uint64_t expectedEndTime, bool isFlag)
     {
+      if(isFlag)expectedEndTime = (expectedEndTime << 1) + 1;
+      else expectedEndTime = (expectedEndTime << 1);
       mQueue.PutEvent(aEvent, aProofOfLock, expectedEndTime);
     }
 
     void PutEvent(already_AddRefed<nsIRunnable> aEvent,
-                  mozilla::MutexAutoLock& aProofOfLock, uint64_t expectedEndTime)
+                  mozilla::MutexAutoLock& aProofOfLock, uint64_t expectedEndTime, bool isFlag)
     {
+      if(isFlag)expectedEndTime = (expectedEndTime << 1) + 1;
+      else expectedEndTime = (expectedEndTime << 1);
       mQueue.PutEvent(mozilla::Move(aEvent), aProofOfLock,expectedEndTime);
     }
 
     bool SecSwapRunnable(nsIRunnable* runnable, uint64_t expTime, mozilla::MutexAutoLock& aProofOfLock){
       return mQueue.SecSwapRunnable(runnable, expTime, aProofOfLock);
+    }
+
+    bool setIsMain(bool aIsMain) {
+      return mQueue.setIsMain(aIsMain);
     }
     //SECLAB END
 
