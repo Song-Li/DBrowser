@@ -133,7 +133,7 @@ nsEventQueue::SecSwapRunnable(nsIRunnable* runnable, const uint64_t expTime, Mut
     return true;
   }
   else {
-    PutEvent(runnable, aProofOfLock, expTime);
+    PutEvent(runnable, aProofOfLock, expTime << 1);// The flag should be false here
     return false;
   }
 
