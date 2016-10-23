@@ -6,6 +6,9 @@
 
 #include "PerformanceMainThread.h"
 #include "PerformanceNavigation.h"
+ /*SECLAB*/
+ #include "../../js/src/vm/Counter.h"
+ /*SECLAB*/
 
 namespace mozilla {
 namespace dom {
@@ -111,7 +114,11 @@ PerformanceMainThread::Navigation()
 DOMHighResTimeStamp
 PerformanceMainThread::Now() const
 {
-  return RoundTime(GetDOMTiming()->TimeStampToDOMHighRes(TimeStamp::Now()));
+  //return RoundTime(GetDOMTiming()->TimeStampToDOMHighRes(TimeStamp::Now()));
+  /*SECLAB*/
+  printf("PerformanceMainThread, %d", get_counter());
+  return get_counter();
+  /*SECLAB*/
 }
 
 /**

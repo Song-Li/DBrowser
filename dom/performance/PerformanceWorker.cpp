@@ -6,6 +6,9 @@
 
 #include "PerformanceWorker.h"
 #include "WorkerPrivate.h"
+/*SECLAB*/
+#include "../../js/src/vm/Counter.h"
+/*SECLAB*/
 
 namespace mozilla {
 namespace dom {
@@ -28,7 +31,11 @@ PerformanceWorker::Now() const
 {
   TimeDuration duration =
     TimeStamp::Now() - mWorkerPrivate->NowBaseTimeStamp();
-  return RoundTime(duration.ToMilliseconds());
+  //return RoundTime(duration.ToMilliseconds());
+  /*SECLAB*/
+  printf("PerformanceWorker, %d\n", get_counter());
+  return get_counter();
+  /*SECLAB*/
 }
 
 // To be removed once bug 1124165 lands

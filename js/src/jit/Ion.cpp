@@ -2809,6 +2809,9 @@ jit::CanEnterUsingFastInvoke(JSContext* cx, HandleScript script, uint32_t numAct
 static JitExecStatus
 EnterIon(JSContext* cx, EnterJitData& data)
 {
+    /* SECLAB*/
+    printf("Run JIT PART");
+    /* SECLAB*/
     JS_CHECK_RECURSION(cx, return JitExec_Aborted);
     MOZ_ASSERT(jit::IsIonEnabled(cx));
     MOZ_ASSERT(!data.osrFrame);

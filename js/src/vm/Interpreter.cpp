@@ -57,8 +57,51 @@
 #include "vm/Probes-inl.h"
 #include "vm/Stack-inl.h"
 
+/* SECLAB include counter.h*/
+#include "Counter.h"
+/* CECLAB */
+
 using namespace js;
 using namespace js::gc;
+
+//SECLAB BEGIN 10/21/2016
+volatile uint64_t counter = 0;
+
+uint64_t jsThread=0;
+
+uint64_t getJSThread(){
+    return jsThread;
+}
+
+void inc_counter(uint64_t args) {
+    //printf("JS thread : %ld\n",pthread_self());
+    if(jsThread==0){
+      jsThread=pthread_self();
+      printf("jsThread: %lx\n",jsThread);
+    }
+    uint64_t c = (uint64_t)args;
+    counter += c;
+    JS_COUNTER_LOG("counter %i inc %i", counter, c);
+}
+
+uint64_t get_counter(void) {
+    JS_COUNTER_LOG("counter : %i", __FUNCTION__, counter);
+    return counter;
+}
+
+void set_counter(uint64_t time) {
+    JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
+    counter=time;
+}
+
+void reset_counter() {
+    counter = 1;
+}
+
+uint64_t get_scaled_counter(uint64_t args) {
+    return counter/args;
+}
+/*SECLAB-END*/
 
 using mozilla::ArrayLength;
 using mozilla::DebugOnly;
@@ -372,6 +415,8 @@ js::RunScript(JSContext* cx, RunState& state)
 
     state.script()->ensureNonLazyCanonicalFunction(cx);
 
+    /*SECLAB*/
+    /*
     if (jit::IsIonEnabled(cx)) {
         jit::MethodStatus status = jit::CanEnter(cx, state);
         if (status == jit::Method_Error)
@@ -391,12 +436,17 @@ js::RunScript(JSContext* cx, RunState& state)
             return !IsErrorStatus(status);
         }
     }
+    */
 
     if (state.isInvoke()) {
         InvokeState& invoke = *state.asInvoke();
         TypeMonitorCall(cx, invoke.args(), invoke.constructing());
     }
 
+    /*SECLAB*/
+    /*SECLAB*/
+    printf("Inter Interpret part    Counter: %d \n", get_counter());
+    /*SECLAB*/
     return Interpret(cx, state);
 }
 #ifdef _MSC_VER
@@ -1639,12 +1689,15 @@ Interpret(JSContext* cx, RunState& state)
      * will enable interrupts, and activation.opMask() is or'd with the opcode
      * to implement a simple alternate dispatch.
      */
+     /*SECLAB*/
 #define ADVANCE_AND_DISPATCH(N)                                               \
     JS_BEGIN_MACRO                                                            \
         REGS.pc += (N);                                                       \
+        inc_counter(1);                                                       \
         SANITY_CHECKS();                                                      \
         DISPATCH_TO(*REGS.pc | activation.opMask());                          \
     JS_END_MACRO
+    /*SECLAB*/
 
    /*
     * Shorthand for the common sequence at the end of a fixed-size opcode.
