@@ -708,7 +708,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
         }
         temExpTime = currentThread->expTime;
         bool s = mEventsRoot.SecSwapRunnable(event.get(), temExpTime, lock);
-        //printf("swap: %ld,%d\n",currentThread->expTime,s);
+        printf("swap: %ld,%d\n",currentThread->expTime,s);
         put = false;
       }
     }
