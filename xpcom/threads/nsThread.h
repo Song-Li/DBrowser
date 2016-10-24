@@ -163,7 +163,7 @@ protected:
 
     void PutEvent(nsIRunnable* aEvent, mozilla::MutexAutoLock& aProofOfLock, uint64_t expectedEndTime, bool isFlag)
     {
-      if(isFlag)expectedEndTime = (expectedEndTime << 1) + 1;
+      if(isFlag)expectedEndTime = expectedEndTime << 1 | 1;
       else expectedEndTime = (expectedEndTime << 1);
       mQueue.PutEvent(aEvent, aProofOfLock, expectedEndTime);
     }
@@ -253,6 +253,7 @@ protected:
 
   bool getFlag();
 
+  nsIRunnable* flagEvent;
   //SECLAB END
 
   nsCOMPtr<nsIThreadObserver> mObserver;

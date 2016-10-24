@@ -91,17 +91,18 @@ private:
   //SECLAB Sat 22 Oct 2016 03:06:55 PM EDT END
   //SECLAB Tue 18 Oct 2016 11:23:11 AM EDT START
 
-  nsIRunnable** GetFlag(const uint64_t expTime, nsIRunnable** runnable, uint64_t* timeLocation) {
+  nsIRunnable** GetSetFlag(const uint64_t expTime, int flag) {
     Page* head = mHead;
     int offset = mOffsetHead;
-    while(head != mTail && offset != mOffsetTail) {
+    while(head != mTail || offset != mOffsetTail) {
       if(offset == EVENTS_PER_PAGE) {
         offset = 0;
         head = head->mNext;
       }else {
         if(head->mExpTime[offset] == expTime) {
-          runnable = &(head->mEvents[offset]);
-          timeLocation = &(head->mExpTime[offset]);
+          //SECLAB Sun 23 Oct 2016 04:41:10 PM EDT START
+          head->mExpTime[offset] = (expTime >> 1 << 1 | flag);
+          //SECLAB Sun 23 Oct 2016 04:41:13 PM EDT END
           return &(head->mEvents[offset]);
         }
         offset ++;

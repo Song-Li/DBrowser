@@ -697,17 +697,14 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
 
     if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
       if(currentThread->expTime > 1000000){
-        if(getFlag()){
+        if(getFlag() && flagExpTime == currentThread->expTime){
           printf("release: %ld\n",currentThread->expTime);
           setFlag(false);
-        }
-        if(flag && flagExpTime == currentThread->expTime){
-          printf("release: %ld\n",currentThread->expTime);
-          flag = false;
           printf("change flag: %ld\n",flag);
+          flagEvent = event.get();
         }
         temExpTime = currentThread->expTime;
-        bool s = mEventsRoot.SecSwapRunnable(event.get(), temExpTime, lock);
+        bool s = mEventsRoot.SecSwapRunnable(event.get(), currentThread->expTime, lock);
         printf("swap: %ld,%d\n",currentThread->expTime,s);
         put = false;
       }
@@ -748,6 +745,7 @@ void nsThread::putFlag(uint64_t expTime){
   //printf("put flag: %ld\n", expTime);
   MutexAutoLock lock(mLock);
   nsIRunnable* flagEvent = new Runnable();
+  printf("put flag:%ld\n", expTime);
   mEventsRoot.PutEvent(flagEvent, lock, expTime, true);
 }
 //SECLAB END
@@ -1134,8 +1132,14 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
           bool temFlag = getFlag();
           while(temFlag){
             temFlag = getFlag();
+            if(get_counter() - flagExpTime > 10000)break;
+            if(i++ > 1e7)break;
           }
           printf("unlock: %ld\n",*temExpTime);
+          if(flagEvent == NULL)printf("null\n");
+          if(flagEvent != NULL)event = flagEvent;
+          flagEvent = NULL;
+          if(flagExpTime > get_counter())set_counter(flagExpTime);
         }
         this->expTime = (get_counter()+100);
       }
