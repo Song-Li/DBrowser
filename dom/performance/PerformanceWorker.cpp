@@ -33,8 +33,8 @@ PerformanceWorker::Now() const
     TimeStamp::Now() - mWorkerPrivate->NowBaseTimeStamp();
   //return RoundTime(duration.ToMilliseconds());
   /*SECLAB*/
-  printf("PerformanceWorker, %d\n", get_counter());
-  return get_counter();
+  //printf("PerformanceWorker, %d\n", get_counter());
+  return (double)get_counter() / (1e7);
   /*SECLAB*/
 }
 

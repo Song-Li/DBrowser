@@ -116,8 +116,8 @@ PerformanceMainThread::Now() const
 {
   //return RoundTime(GetDOMTiming()->TimeStampToDOMHighRes(TimeStamp::Now()));
   /*SECLAB*/
-  printf("PerformanceMainThread, %d", get_counter());
-  return get_counter();
+  //printf("PerformanceMainThread, %d", get_counter());
+  return (double)get_counter() / (1e7);
   /*SECLAB*/
 }
 

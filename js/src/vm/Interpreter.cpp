@@ -415,8 +415,6 @@ js::RunScript(JSContext* cx, RunState& state)
 
     state.script()->ensureNonLazyCanonicalFunction(cx);
 
-    /*SECLAB*/
-    /*
     if (jit::IsIonEnabled(cx)) {
         jit::MethodStatus status = jit::CanEnter(cx, state);
         if (status == jit::Method_Error)
@@ -436,7 +434,6 @@ js::RunScript(JSContext* cx, RunState& state)
             return !IsErrorStatus(status);
         }
     }
-    */
 
     if (state.isInvoke()) {
         InvokeState& invoke = *state.asInvoke();
@@ -444,8 +441,7 @@ js::RunScript(JSContext* cx, RunState& state)
     }
 
     /*SECLAB*/
-    /*SECLAB*/
-    printf("Inter Interpret part    Counter: %d \n", get_counter());
+    //printf("Inter Interpret part    Counter: %d \n", get_counter());
     /*SECLAB*/
     return Interpret(cx, state);
 }
