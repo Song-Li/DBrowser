@@ -168,12 +168,11 @@ IsIonEnabled(JSContext* cx)
 #if defined(JS_CODEGEN_NONE) || defined(JS_CODEGEN_ARM64)
     return false;
 #else
-    /* SECLAB
     return cx->options().ion() &&
            cx->options().baseline() &&
            cx->runtime()->jitSupportsFloatingPoint;
-    SECLAB */
-    return false;
+
+    /* SECLAB return false;SECLAB */
 #endif
 }
 

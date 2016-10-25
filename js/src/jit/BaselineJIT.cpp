@@ -27,6 +27,9 @@
 #include "jit/JitFrames-inl.h"
 #include "jit/MacroAssembler-inl.h"
 #include "vm/Stack-inl.h"
+/*SECLAB*/
+#include "../vm/Counter.h"
+/*SECLAB*/
 
 using mozilla::BinarySearchIf;
 using mozilla::DebugOnly;
@@ -100,6 +103,8 @@ CheckFrame(InterpreterFrame* fp)
     return true;
 }
 
+
+/*SECLAB Execute the JIT part(Baseline part)*/
 static JitExecStatus
 EnterBaseline(JSContext* cx, EnterJitData& data)
 {
@@ -169,6 +174,11 @@ EnterBaseline(JSContext* cx, EnterJitData& data)
     {
         MOZ_ASSERT(data.maxArgv[0].isObject());
         data.result = data.maxArgv[0];
+        /*SECLAB Execute the JIT part(Baseline part) Add Counter*/
+        printf("        Baseline part: %ld  Before add\n", get_counter());
+        inc_counter(1);
+        printf("        Baseline part: %ld  After add\n", get_counter());
+        /*SECLAB Execute the JIT part(Baseline part) Add Counter*/
     }
 
     // Release temporary buffer used for OSR into Ion.

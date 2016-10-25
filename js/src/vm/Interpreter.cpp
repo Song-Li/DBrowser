@@ -441,7 +441,7 @@ js::RunScript(JSContext* cx, RunState& state)
     }
 
     /*SECLAB*/
-    //printf("Inter Interpret part    Counter: %d \n", get_counter());
+    printf("Inter Interpret part    Counter: %d \n", get_counter());
     /*SECLAB*/
     return Interpret(cx, state);
 }

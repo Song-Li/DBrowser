@@ -523,10 +523,8 @@ IsBaselineEnabled(JSContext* cx)
 #ifdef JS_CODEGEN_NONE
     return false;
 #else
-    /* SECLAB
     return cx->options().baseline();
-    SECLAB*/
-    return false;
+    /* SECLAB return false;SECLAB*/
 #endif
 }
 
