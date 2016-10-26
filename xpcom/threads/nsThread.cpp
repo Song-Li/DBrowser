@@ -697,19 +697,6 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     const char *threadName = PR_GetThreadName(PR_GetCurrentThread());
     bool put = true;
 
-    /*if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
-      if(threadName){
-        //printf("%s\n",threadName);
-        std::string nameString(threadName);
-        if(nameString.find("Im") != std::string::npos)printf("include img: %s\n",nameString);
-        std::set<std::string>::iterator it = nameSet.find(mName);
-        if(it == nameSet.end()){
-          nameSet.insert(threadName);
-          printf("%s\n",threadName);
-        }
-      }
-    }*/
-
     if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
       if(currentThread->expTime > 1e6){
         /*std::string nameString(threadName);
@@ -736,7 +723,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
             }
           }
         }*/
-        if(getFlag() && flagExpTime == currentThread->expTime){
+        /*if(getFlag() && flagExpTime == currentThread->expTime){
           printf("release: %ld\n",currentThread->expTime);
           setFlag(false);
           printf("change flag: %ld\n",flag);
@@ -748,7 +735,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
           bool s = mEventsRoot.SecSwapRunnable(event.get(), currentThread->expTime, lock);
           printf("swap: %ld,%d\n",currentThread->expTime,s);
           put = false;
-        }
+        }*/
       }
       else{
         temExpTime = get_counter();
