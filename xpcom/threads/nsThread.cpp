@@ -691,7 +691,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     }
 
     //SECLAB BEGIN 10/21/2016
-    mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
+    //mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
     uint64_t temExpTime=get_counter();
     nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
     const char *threadName = PR_GetThreadName(PR_GetCurrentThread());
