@@ -723,19 +723,17 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
             }
           }
         }*/
-        /*if(getFlag() && flagExpTime == currentThread->expTime){
+        if(getFlag() && flagExpTime == currentThread->expTime){
           printf("release: %ld\n",currentThread->expTime);
           setFlag(false);
-          printf("change flag: %ld\n",flag);
           flagEvent = event.get();
           put = false;
         }
         else{
-          temExpTime = currentThread->expTime;
           bool s = mEventsRoot.SecSwapRunnable(event.get(), currentThread->expTime, lock);
           printf("swap: %ld,%d\n",currentThread->expTime,s);
           put = false;
-        }*/
+        }
       }
       else{
         temExpTime = get_counter();
@@ -1169,6 +1167,7 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
             temFlag = getFlag();
             //if(get_counter() - flagExpTime > 10000)break;
             if(i++ > 1e5){
+              printf("timeout--------------\n");
               isBreak = true;
               break;
             }
@@ -1185,7 +1184,8 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
           }
           flagEvent = NULL;
         }
-        this->expTime = (get_counter()+1e6);
+        else if(!*isFlag && *temExpTime > get_counter())set_counter(*temExpTime);
+        this->expTime = (get_counter()+1e4);
       }
       else{
         if(*temExpTime != 0)this->expTime = *temExpTime;
