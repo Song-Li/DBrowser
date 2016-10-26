@@ -604,6 +604,7 @@ nsThread::nsThread(MainThreadFlag aMainThread, uint32_t aStackSize)
   , mEventsAreDoomed(false)
   , mIsMainThread(aMainThread)
   , mFlagLock("nsThread.mFlagLock")
+  , mName(PR_GetThreadName(PR_GetCurrentThread()))
 {
 }
 
@@ -691,29 +692,75 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
 
     //SECLAB BEGIN 10/21/2016
     mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
-    uint64_t temExpTime=0;
+    uint64_t temExpTime=get_counter();
     nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
+    const char *threadName = PR_GetThreadName(PR_GetCurrentThread());
     bool put = true;
 
+    /*if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
+      if(threadName){
+        //printf("%s\n",threadName);
+        std::string nameString(threadName);
+        if(nameString.find("Im") != std::string::npos)printf("include img: %s\n",nameString);
+        std::set<std::string>::iterator it = nameSet.find(mName);
+        if(it == nameSet.end()){
+          nameSet.insert(threadName);
+          printf("%s\n",threadName);
+        }
+      }
+    }*/
+
     if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
-      if(currentThread->expTime > 1000000){
+      if(currentThread->expTime > 1e6){
+        /*std::string nameString(threadName);
+        if(nameString.find("Im") != std::string::npos){
+          printf("image\n");
+          if(currentThread->expTime == 0)temExpTime = get_counter();
+          temExpTime = currentThread->expTime;
+        }*/
+        /*std::string nameString(threadName);
+        if(nameString.find("Im") != std::string::npos){
+          if(getFlag() && flagExpTime == currentThread->expTime){
+            printf("release: %ld\n",currentThread->expTime);
+            setFlag(false);
+            printf("change flag: %ld\n",flag);
+            flagEvent = event.get();
+            put = false;
+          }
+          else{
+            temExpTime = currentThread->expTime;
+            bool s = mEventsRoot.SecSwapRunnable(event.get(), currentThread->expTime, lock);
+            put = false;
+            if(s){
+              printf("swap: %ld,%d\n",currentThread->expTime,s);
+            }
+          }
+        }*/
         if(getFlag() && flagExpTime == currentThread->expTime){
           printf("release: %ld\n",currentThread->expTime);
           setFlag(false);
           printf("change flag: %ld\n",flag);
           flagEvent = event.get();
+          put = false;
         }
-        temExpTime = currentThread->expTime;
-        bool s = mEventsRoot.SecSwapRunnable(event.get(), currentThread->expTime, lock);
-        printf("swap: %ld,%d\n",currentThread->expTime,s);
-        put = false;
+        else{
+          temExpTime = currentThread->expTime;
+          bool s = mEventsRoot.SecSwapRunnable(event.get(), currentThread->expTime, lock);
+          printf("swap: %ld,%d\n",currentThread->expTime,s);
+          put = false;
+        }
+      }
+      else{
+        temExpTime = get_counter();
       }
     }
     else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread == MAIN_THREAD){
-      temExpTime = get_counter();
+      temExpTime = currentThread->expTime;
     }
     else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread != MAIN_THREAD){
-      currentThread->putFlag(currentThread->expTime);
+      if(currentThread->expTime > 1e6){
+        currentThread->putFlag(currentThread->expTime);
+      }
       temExpTime = currentThread->expTime;
     }
     else{
@@ -745,7 +792,7 @@ void nsThread::putFlag(uint64_t expTime){
   //printf("put flag: %ld\n", expTime);
   MutexAutoLock lock(mLock);
   nsIRunnable* flagEvent = new Runnable();
-  printf("put flag:%ld\n", expTime);
+  //printf("put flag:%ld\n", expTime);
   mEventsRoot.PutEvent(flagEvent, lock, expTime, true);
 }
 //SECLAB END
@@ -1124,24 +1171,34 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
 
       if (MAIN_THREAD == mIsMainThread) {
-        if(*isFlag && *temExpTime > 1000000){
+        if(*isFlag && *temExpTime > 1e6){
           setFlag(true);
           flagExpTime = *temExpTime;
-          printf("block: %ld\n",*temExpTime);
+          //printf("block: %ld\n",*temExpTime);
           int i=0;
           bool temFlag = getFlag();
+          bool isBreak = false;
           while(temFlag){
             temFlag = getFlag();
-            if(get_counter() - flagExpTime > 10000)break;
-            if(i++ > 1e7)break;
+            //if(get_counter() - flagExpTime > 10000)break;
+            if(i++ > 1e5){
+              isBreak = true;
+              break;
+            }
           }
-          printf("unlock: %ld\n",*temExpTime);
-          if(flagEvent == NULL)printf("null\n");
-          if(flagEvent != NULL)event = flagEvent;
+          //printf("unlock: %ld\n",*temExpTime);
+          //if(isBreak)printf("null\n");
+          if(!isBreak && flagEvent != NULL){
+            event = flagEvent;
+            printf("not null\n");
+            if(*temExpTime > get_counter()){
+              set_counter(*temExpTime);
+              printf("reset count: %ld\n", *temExpTime);
+            }
+          }
           flagEvent = NULL;
-          if(flagExpTime > get_counter())set_counter(flagExpTime);
         }
-        this->expTime = (get_counter()+100);
+        this->expTime = (get_counter()+1e6);
       }
       else{
         if(*temExpTime != 0)this->expTime = *temExpTime;

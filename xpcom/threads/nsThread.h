@@ -19,6 +19,9 @@
 #include "nsAutoPtr.h"
 #include "mozilla/AlreadyAddRefed.h"
 
+#include <set>
+#include <string>
+
 namespace mozilla {
 class CycleCollectedJSRuntime;
 }
@@ -42,6 +45,10 @@ public:
   uint64_t expTime=0;
 
   uint64_t flagExpTime=0;
+
+  std::set<std::string> nameSet;
+
+  const char* mName;
   //SECLAB END
 
   enum MainThreadFlag

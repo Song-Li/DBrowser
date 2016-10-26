@@ -226,7 +226,6 @@ void
 nsEventQueue::PutEvent(already_AddRefed<nsIRunnable>&& aRunnable,
                        MutexAutoLock& aProofOfLock, uint64_t expTime)
 {
-  if(expTime & 1 ==1)printf("put flag %ld\n",expTime);
 
   //SECLAB Thu 13 Oct 2016 03:08:32 PM EDT START
   nsIRunnable* runnable = aRunnable.take();
