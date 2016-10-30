@@ -1,0 +1,21 @@
+\documentclass{article}
+
+\usepackage{booktabs}
+
+\begin{document}
+
+\begin{table}[!h]
+	\centering
+	\begin{tabular}{*6c}
+	\toprule
+	{} & Chrome & Firefox & Tor Browser & FuzzyFox & DBrowser \\
+	\midrule
+	clock-edge Attack & S & S & S & F & F \\
+	Script Parse(small files) & S & S & S & F & F \\
+	Script Parse(big files) & S & S & S & S & F \\
+	\bottomrule
+	\end{tabular}
+	\caption{\label{tab:widgets}An example table. S : Attack Succeed F : Attak Failed }
+\end{table}
+
+\end{document}
