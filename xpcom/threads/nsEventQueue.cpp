@@ -136,7 +136,6 @@ nsEventQueue::SecSwapRunnable(nsIRunnable* runnable, const uint64_t expTime, Mut
     PutEvent(runnable, aProofOfLock, expTime << 1);// The flag should be false here
     return false;
   }
-
 }
 //SECLAB Tue 18 Oct 2016 11:39:30 AM EDT END
 
@@ -198,7 +197,7 @@ nsEventQueue::GetEvent(bool aMayWait, nsIRunnable** aResult,
     LOG(("EVENTQ(%p): wait end\n", this));
   }
 
-  GetRunNow();
+  if(getIsMain()) GetRunNow();
 
   if (aResult) {
     MOZ_ASSERT(mOffsetHead < EVENTS_PER_PAGE);
@@ -227,6 +226,7 @@ void
 nsEventQueue::PutEvent(already_AddRefed<nsIRunnable>&& aRunnable,
                        MutexAutoLock& aProofOfLock, uint64_t expTime)
 {
+
   //SECLAB Thu 13 Oct 2016 03:08:32 PM EDT START
   nsIRunnable* runnable = aRunnable.take();
   //runnable->expTime = secCounter ++;

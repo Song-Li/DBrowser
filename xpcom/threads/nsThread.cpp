@@ -37,6 +37,13 @@
 #include "nsThreadSyncDispatch.h"
 #include "LeakRefPtr.h"
 
+//SECLAB BEGIN 10/03/2016
+#include "nsThreadUtils.h"
+#include "../../js/src/vm/Counter.h"
+#include "../../docshell/base/nsDocShell.h"
+#include <typeinfo>
+//SECLAB END
+
 #ifdef MOZ_CRASHREPORTER
 #include "nsServiceManagerUtils.h"
 #include "nsICrashReporter.h"
@@ -596,6 +603,8 @@ nsThread::nsThread(MainThreadFlag aMainThread, uint32_t aStackSize)
   , mShutdownRequired(false)
   , mEventsAreDoomed(false)
   , mIsMainThread(aMainThread)
+  , mFlagLock("nsThread.mFlagLock")
+  , mName(PR_GetThreadName(PR_GetCurrentThread()))
 {
 }
 
@@ -680,7 +689,73 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
       NS_WARNING("An event was posted to a thread that will never run it (rejected)");
       return NS_ERROR_UNEXPECTED;
     }
-    queue->PutEvent(event.take(), lock);
+
+    //SECLAB BEGIN 10/21/2016
+    //mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
+    uint64_t temExpTime=get_counter();
+    nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
+    const char *threadName = PR_GetThreadName(PR_GetCurrentThread());
+    bool put = true;
+
+    if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
+      if(currentThread->expTime > 1e6){
+        /*std::string nameString(threadName);
+        if(nameString.find("Im") != std::string::npos){
+          printf("image\n");
+          if(currentThread->expTime == 0)temExpTime = get_counter();
+          temExpTime = currentThread->expTime;
+        }*/
+        /*std::string nameString(threadName);
+        if(nameString.find("Im") != std::string::npos){
+          if(getFlag() && flagExpTime == currentThread->expTime){
+            printf("release: %ld\n",currentThread->expTime);
+            setFlag(false);
+            printf("change flag: %ld\n",flag);
+            flagEvent = event.get();
+            put = false;
+          }
+          else{
+            temExpTime = currentThread->expTime;
+            bool s = mEventsRoot.SecSwapRunnable(event.get(), currentThread->expTime, lock);
+            put = false;
+            if(s){
+              printf("swap: %ld,%d\n",currentThread->expTime,s);
+            }
+          }
+        }*/
+        if(getFlag() && flagExpTime == currentThread->expTime){
+          printf("release: %ld\n",currentThread->expTime);
+          setFlag(false);
+          flagEvent = event.get();
+          put = false;
+        }
+        else{
+          bool s = mEventsRoot.SecSwapRunnable(event.get(), currentThread->expTime, lock);
+          printf("swap: %ld,%d\n",currentThread->expTime,s);
+          put = false;
+        }
+      }
+      else{
+        temExpTime = get_counter();
+      }
+    }
+    else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread == MAIN_THREAD){
+      temExpTime = currentThread->expTime;
+    }
+    else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread != MAIN_THREAD){
+      if(currentThread->expTime > 1e6){
+        currentThread->putFlag(currentThread->expTime);
+      }
+      temExpTime = currentThread->expTime;
+    }
+    else{
+      temExpTime = currentThread->expTime;
+    }
+
+    if(put)queue->PutEvent(event.take(), lock, temExpTime, false);
+
+    //queue->PutEvent(event.take(), lock);
+    //SECLAB END
 
     // Make sure to grab the observer before dropping the lock, otherwise the
     // event that we just placed into the queue could run and eventually delete
@@ -695,6 +770,17 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
 
   return NS_OK;
 }
+
+//SECLAB BEGIN 10/22/2016
+void nsThread::putFlag(uint64_t expTime){
+  if( mIsMainThread != MAIN_THREAD || expTime < 1000000)return;
+  //printf("put flag: %ld\n", expTime);
+  MutexAutoLock lock(mLock);
+  nsIRunnable* flagEvent = new Runnable();
+  //printf("put flag:%ld\n", expTime);
+  mEventsRoot.PutEvent(flagEvent, lock, expTime, true);
+}
+//SECLAB END
 
 nsresult
 nsThread::DispatchInternal(already_AddRefed<nsIRunnable> aEvent, uint32_t aFlags,
@@ -1042,10 +1128,19 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
     // also do work.
 
     // If we are shutting down, then do not wait for new events.
+
+    uint64_t* temExpTime=(uint64_t*) malloc(sizeof(uint64_t));
+    bool* isFlag = (bool*) malloc(sizeof(bool));
+
     nsCOMPtr<nsIRunnable> event;
     {
       MutexAutoLock lock(mLock);
-      mEvents->GetEvent(reallyWait, getter_AddRefs(event), lock);
+      //mEvents->GetEvent(reallyWait, getter_AddRefs(event), lock);
+
+      //SECLAB BEGIN 10/17/2016
+      mEvents->GetEvent(reallyWait, getter_AddRefs(event), lock, temExpTime, isFlag);
+      //SECLAB END
+
     }
 
     *aResult = (event.get() != nullptr);
@@ -1055,6 +1150,49 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       if (MAIN_THREAD == mIsMainThread) {
         HangMonitor::NotifyActivity();
       }
+
+      //SECLAB BEGIN 10/21/2016
+
+      nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
+
+      if (MAIN_THREAD == mIsMainThread) {
+        if(*isFlag && *temExpTime > 1e6){
+          setFlag(true);
+          flagExpTime = *temExpTime;
+          //printf("block: %ld\n",*temExpTime);
+          int i=0;
+          bool temFlag = getFlag();
+          bool isBreak = false;
+          while(temFlag){
+            temFlag = getFlag();
+            //if(get_counter() - flagExpTime > 10000)break;
+            if(i++ > 1e5){
+              printf("timeout--------------\n");
+              isBreak = true;
+              break;
+            }
+          }
+          //printf("unlock: %ld\n",*temExpTime);
+          //if(isBreak)printf("null\n");
+          if(!isBreak && flagEvent != NULL){
+            event = flagEvent;
+            printf("not null\n");
+            if(*temExpTime > get_counter()){
+              set_counter(*temExpTime);
+              printf("reset count: %ld\n", *temExpTime);
+            }
+          }
+          flagEvent = NULL;
+        }
+        else if(!*isFlag && *temExpTime > get_counter())set_counter(*temExpTime);
+        this->expTime = (get_counter()+1e4);
+      }
+      else{
+        if(*temExpTime != 0)this->expTime = *temExpTime;
+        else this->expTime = get_counter();
+      }
+      //SECLAB END
+
       event->Run();
     } else if (aMayWait) {
       MOZ_ASSERT(ShuttingDown(),
@@ -1209,6 +1347,7 @@ nsThread::PushEventQueue(nsIEventTarget** aResult)
 
   {
     MutexAutoLock lock(mLock);
+
     queue->mNext = mEvents;
     mEvents = queue;
   }
@@ -1340,3 +1479,20 @@ nsThread::nsNestedEventTarget::IsOnCurrentThread(bool* aResult)
 {
   return mThread->IsOnCurrentThread(aResult);
 }
+
+//SECLAB BEGIN 10/23/2016
+bool
+nsThread::setFlag(bool aFlag)
+{
+  MutexAutoLock lock(mFlagLock);
+  flag = aFlag;
+  return flag;
+}
+
+bool
+nsThread::getFlag()
+{
+  MutexAutoLock lock(mFlagLock);
+  return flag;
+}
+//SECLAB END

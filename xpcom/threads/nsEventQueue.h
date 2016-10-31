@@ -94,7 +94,7 @@ private:
   nsIRunnable** GetSetFlag(const uint64_t expTime, int flag) {
     Page* head = mHead;
     int offset = mOffsetHead;
-    while(head != mTail && offset != mOffsetTail) {
+    while(head != mTail || offset != mOffsetTail) {
       if(offset == EVENTS_PER_PAGE) {
         offset = 0;
         head = head->mNext;
