@@ -723,7 +723,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
           }
         }*/
         if(getFlag() && flagExpTime == temExpTime){
-          printf("release: %ld\n",temExpTime);
+          //printf("release: %ld\n",temExpTime);
           setFlag(false);
           flagEvent = event.get();
           put = false;
@@ -1203,8 +1203,8 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       event->Run();
 
       if(getNow())set_counter(*temExpTime);
-      if(doset && MAIN_THREAD == mIsMainThread)printf("//////////////////%ld,%lx,%lx\n",get_counter(),pthread_self(),getJSThread());
-      if(getNow() && MAIN_THREAD == mIsMainThread)printf("--------------%ld,%lx,%lx\n",get_counter(),pthread_self(),getJSThread());
+      //if(doset && MAIN_THREAD == mIsMainThread) //printf("//////////////////%ld,%lx,%lx\n",get_counter(),pthread_self(),getJSThread());
+      //if(getNow() && MAIN_THREAD == mIsMainThread)printf("--------------%ld,%lx,%lx\n",get_counter(),pthread_self(),getJSThread());
       setNow(false);
 
     } else if (aMayWait) {

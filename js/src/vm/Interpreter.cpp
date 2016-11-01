@@ -92,7 +92,7 @@ void inc_counter(uint64_t args) {
     //mozilla::MutexAutoLock lock(mCounterLock);
     if(jsThread==0){
       jsThread=pthread_self();
-      printf("jsThread: %lx\n",jsThread);
+      //printf("jsThread: %lx\n",jsThread);
     }
     uint64_t c = (uint64_t)args;
     counter += c;
@@ -109,7 +109,7 @@ bool set_counter(uint64_t time) {
     //return false;
     if(!set_flag || time <= counter)return false;
     //if(!set_flag)return false;
-    printf("set time: %ld\n", time);
+    //printf("set time: %ld\n", time);
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
     counter=time;
     return true;

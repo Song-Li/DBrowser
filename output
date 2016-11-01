@@ -1,0 +1,44 @@
+ 0:00.09 /home/sol315/deterministicFox/DBrowser/obj-x86_64-pc-linux-gnu/dist/bin/firefox file:///home/sol315/deterministicFox/DBrowser/attacks/deterFoxtest.html -no-remote -profile /home/sol315/deterministicFox/DBrowser/obj-x86_64-pc-linux-gnu/tmp/scratch_user
+jsThread: 7f88a64f8740
+PerformanceMainThread 746602
+PerformanceMainThread 746602
+PerformanceMainThread 746602
+PerformanceMainThread 746602
+--------------746602,7f88a64f8740,7f88a64f8740
+--------------746602,7f88a64f8740,7f88a64f8740
+PerformanceMainThread 746638
+set time: 756638
+PerformanceMainThread 756638
+release: 3541385
+not null
+release: 3576372
+not null
+release: 3576372
+not null
+release: 5122340
+not null
+release: 5122357
+not null
+release: 5123208
+not null
+release: 5123208
+not null
+release: 5123208
+not null
+release: 5123208
+not null
+release: 5123208
+not null
+release: 5123208
+release: 5125673
+not null
+release: 5125683
+not null
+release: 5129482
+not null
+release: 5130607
+not null
+release: 5130782
+not null
+release: 5131089
+not null
