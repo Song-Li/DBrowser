@@ -59,6 +59,7 @@
 
 /* CSE403-BEGIN : include counter.h*/
 #include "Counter.h"
+#include "mozilla/Mutex.h"
 /* CSE403-END */
 
 using namespace js;
@@ -75,12 +76,20 @@ volatile uint64_t counter = 0;
 
 uint64_t jsThread=0;
 
+bool stop = false;
+
+bool set_flag = true;
+
+int isNow = 0;
+
+//mozilla::Mutex mCounterLock("mCounterLock");
+
 uint64_t getJSThread(){
     return jsThread;
 }
 
 void inc_counter(uint64_t args) {
-    //printf("JS thread : %ld\n",pthread_self());
+    //mozilla::MutexAutoLock lock(mCounterLock);
     if(jsThread==0){
       jsThread=pthread_self();
       printf("jsThread: %lx\n",jsThread);
@@ -91,13 +100,19 @@ void inc_counter(uint64_t args) {
 }
 
 uint64_t get_counter(void) {
+    //mozilla::MutexAutoLock lock(mCounterLock);
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, counter);
     return counter;
 }
 
-void set_counter(uint64_t time) {
+bool set_counter(uint64_t time) {
+    //return false;
+    if(!set_flag || time <= counter)return false;
+    //if(!set_flag)return false;
+    printf("set time: %ld\n", time);
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
     counter=time;
+    return true;
 }
 
 void reset_counter() {
@@ -106,6 +121,24 @@ void reset_counter() {
 
 uint64_t get_scaled_counter(uint64_t args) {
 	return counter/args;
+}
+
+void enable_reset(){
+    set_flag = true;
+}
+
+void disable_reset(){
+    set_flag = false;
+}
+
+bool getNow(){
+    bool result = isNow > 0;
+    if(isNow > 0)isNow--;
+    return result;
+}
+
+void setNow(bool now){
+    if(now) isNow++;
 }
 /*SECLAB-END*/
 

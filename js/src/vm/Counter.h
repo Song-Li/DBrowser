@@ -17,10 +17,18 @@
 extern volatile uint64_t counter;
 void inc_counter(uint64_t args);
 uint64_t get_counter(void);
-void set_counter(uint64_t time);
+bool set_counter(uint64_t time);
 void reset_counter();
 uint64_t get_scaled_counter(uint64_t args);
 
 uint64_t getJSThread();
+
+void enable_reset();
+
+void disable_reset();
+
+bool getNow();
+
+void setNow(bool now);
 
 #endif
