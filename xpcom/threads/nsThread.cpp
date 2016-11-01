@@ -691,7 +691,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     }
 
     //SECLAB BEGIN 10/21/2016
-    //mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
+    mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
     uint64_t temExpTime=get_counter();
     nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
     const char *threadName = PR_GetThreadName(PR_GetCurrentThread());
@@ -699,12 +699,11 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
 
     if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
       if(currentThread->expTime > 1e6){
-        /*std::string nameString(threadName);
-        if(nameString.find("Im") != std::string::npos){
-          printf("image\n");
-          if(currentThread->expTime == 0)temExpTime = get_counter();
-          temExpTime = currentThread->expTime;
-        }*/
+        std::string nameString(threadName);
+        //if(nameString.find("DOM") != std::string::npos){
+          if(currentThread->expTime != 0)temExpTime = currentThread->expTime;
+          //printf("%s,%ld\n", threadName, currentThread->expTime);
+        //}
         /*std::string nameString(threadName);
         if(nameString.find("Im") != std::string::npos){
           if(getFlag() && flagExpTime == currentThread->expTime){
@@ -723,15 +722,15 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
             }
           }
         }*/
-        if(getFlag() && flagExpTime == currentThread->expTime){
-          printf("release: %ld\n",currentThread->expTime);
+        if(getFlag() && flagExpTime == temExpTime){
+          printf("release: %ld\n",temExpTime);
           setFlag(false);
           flagEvent = event.get();
           put = false;
         }
         else{
-          bool s = mEventsRoot.SecSwapRunnable(event.get(), currentThread->expTime, lock);
-          printf("swap: %ld,%d\n",currentThread->expTime,s);
+          bool s = mEventsRoot.SecSwapRunnable(event.get(), temExpTime, lock);
+          //printf("swap: %ld,%d\n",temExpTime,s);
           put = false;
         }
       }
@@ -1155,6 +1154,8 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
 
       nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
 
+      bool doset = false;
+
       if (MAIN_THREAD == mIsMainThread) {
         if(*isFlag && *temExpTime > 1e6){
           setFlag(true);
@@ -1167,7 +1168,7 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
             temFlag = getFlag();
             //if(get_counter() - flagExpTime > 10000)break;
             if(i++ > 1e5){
-              printf("timeout--------------\n");
+              //printf("timeout--------------\n");
               isBreak = true;
               break;
             }
@@ -1177,14 +1178,20 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
           if(!isBreak && flagEvent != NULL){
             event = flagEvent;
             printf("not null\n");
-            if(*temExpTime > get_counter()){
-              set_counter(*temExpTime);
-              printf("reset count: %ld\n", *temExpTime);
-            }
+            //if(*temExpTime > get_counter()){
+              //doset = set_counter(*temExpTime);
+              //disable_reset();
+            //}
           }
+          doset = set_counter(*temExpTime);
+          disable_reset();
           flagEvent = NULL;
         }
-        else if(!*isFlag && *temExpTime > get_counter())set_counter(*temExpTime);
+        //else if(!*isFlag && *temExpTime > get_counter())set_counter(*temExpTime);
+        else if(!*isFlag){
+            doset = set_counter(*temExpTime);
+            disable_reset();
+        }
         this->expTime = (get_counter()+1e4);
       }
       else{
@@ -1194,6 +1201,12 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       //SECLAB END
 
       event->Run();
+
+      if(getNow())set_counter(*temExpTime);
+      if(doset && MAIN_THREAD == mIsMainThread)printf("//////////////////%ld,%lx,%lx\n",get_counter(),pthread_self(),getJSThread());
+      if(getNow() && MAIN_THREAD == mIsMainThread)printf("--------------%ld,%lx,%lx\n",get_counter(),pthread_self(),getJSThread());
+      setNow(false);
+
     } else if (aMayWait) {
       MOZ_ASSERT(ShuttingDown(),
                  "This should only happen when shutting down");

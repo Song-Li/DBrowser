@@ -32,6 +32,7 @@ PerformanceWorker::Now() const
 {
 
   //SECLAB BEGIN 10/21/2016
+  printf("PerformanceWorker %ld\n", get_counter());
   return get_counter();
   //SECLAB END
 
