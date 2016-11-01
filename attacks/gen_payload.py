@@ -1,6 +1,6 @@
-payload = 1e4
+payload = 1e6
 
-f = open('1e4.js', 'w')
+f = open('1e6.js', 'w')
 
 for i in range(int(payload)):
     f.write("hello world\n")
