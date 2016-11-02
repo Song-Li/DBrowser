@@ -114,8 +114,8 @@ bool set_counter(uint64_t time) {
     }
     //printf("set counter: %ld\n",counter);
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
-    //if (defaultCx!=NULL)
-      //  mapCounter[defaultCx] = time;
+    if (defaultCx!=NULL)
+        mapCounter[defaultCx] = time;
     //counter=time;
     return true;
 }
