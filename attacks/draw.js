@@ -1,20 +1,21 @@
 google.charts.load('current', {packages: ['corechart', 'line', 'table']});
 google.charts.setOnLoadCallback(drawBasic);
 
-function drawBasic() {
+function drawBasic(array) {
+  if(array == undefined) return ;
+
   var data = new google.visualization.DataTable();
   data.addColumn('number', 'X');
-  data.addColumn('number', 'Dogs');
+  data.addColumn('number', 'DeterFox');
 
-  array = doJob();
   data.addRows(array);
 
   var options = {
     hAxis: {
-      title: 'Time'
+      title: 'Size'
     },
     vAxis: {
-      title: 'Popularity'
+      title: 'Time'
     }
   };
 
