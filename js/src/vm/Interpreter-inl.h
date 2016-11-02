@@ -797,6 +797,8 @@ ReportIfNotFunction(JSContext* cx, HandleValue v, MaybeConstruct construct = NO_
  * will just call js::Call.  If the callee has a valid IonScript, however, it
  * will enter Ion directly.
  */
+
+ /*SECLAB  I am not sure about this part*/
 class FastCallGuard
 {
     InvokeArgs args_;

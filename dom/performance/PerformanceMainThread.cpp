@@ -6,6 +6,9 @@
 
 #include "PerformanceMainThread.h"
 #include "PerformanceNavigation.h"
+ /*SECLAB*/
+ #include "../../js/src/vm/Counter.h"
+ /*SECLAB*/
 
 //SECLAB BEGIN 10/03/2016
 #include "../../js/src/vm/Counter.h"

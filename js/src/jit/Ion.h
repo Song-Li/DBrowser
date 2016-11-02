@@ -172,6 +172,8 @@ IsIonEnabled(JSContext* cx)
     return cx->options().ion() &&
            cx->options().baseline() &&
            cx->runtime()->jitSupportsFloatingPoint;
+
+    /* SECLAB return false;SECLAB */
 #endif
 }
 

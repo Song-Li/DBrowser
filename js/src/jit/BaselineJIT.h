@@ -525,6 +525,7 @@ IsBaselineEnabled(JSContext* cx)
     return false;
 #else
     return cx->options().baseline();
+    /* SECLAB return false;SECLAB*/
 #endif
 }
 

@@ -58,6 +58,9 @@
 #include "vm/Debugger-inl.h"
 #include "vm/EnvironmentObject-inl.h"
 #include "vm/Stack-inl.h"
+/*SECLAB*/
+#include "../vm/Counter.h"
+/*SECLAB*/
 
 using namespace js;
 using namespace js::jit;
@@ -2806,6 +2809,7 @@ jit::CanEnterUsingFastInvoke(JSContext* cx, HandleScript script, uint32_t numAct
     return Method_Compiled;
 }
 
+/* SECLAB Execute the JIT part(Ion part)*/
 static JitExecStatus
 EnterIon(JSContext* cx, EnterJitData& data)
 {
@@ -2846,6 +2850,11 @@ EnterIon(JSContext* cx, EnterJitData& data)
     {
         MOZ_ASSERT(data.maxArgv[0].isObject());
         data.result = data.maxArgv[0];
+        /*SECLAB Execute the JIT part(Ion part) Add Counter*/
+        printf("Ion part: %ld  Before add\n", get_counter());
+        inc_counter(1);
+        printf("Ion part: %ld  After add\n", get_counter());
+        /*SECLAB Execute the JIT part(Ion part) Add Counter*/
     }
 
     // Release temporary buffer used for OSR into Ion.
@@ -2919,7 +2928,7 @@ jit::SetEnterJitData(JSContext* cx, EnterJitData& data, RunState& state,
 
     return true;
 }
-
+/*SECLAB  return the status of JIT execution(IonCannon part)*/
 JitExecStatus
 jit::IonCannon(JSContext* cx, RunState& state)
 {
@@ -2940,6 +2949,7 @@ jit::IonCannon(JSContext* cx, RunState& state)
     return status;
 }
 
+/*SECLAB  return the status of JIT execution(FastInvoke part)*/
 JitExecStatus
 jit::FastInvoke(JSContext* cx, HandleFunction fun, CallArgs& args)
 {
@@ -2982,8 +2992,15 @@ jit::FastInvoke(JSContext* cx, HandleFunction fun, CallArgs& args)
 
     args.rval().set(result);
 
+    /*SECLAB  return the status of JIT execution(FastInvoke part) Add Counter*/
+    if (!result.isMagic()){
+        printf("                FastInvoke part: %ld  Before add\n", get_counter());
+        inc_counter(1);
+        printf("                FastInvoke part: %ld  Before add\n", get_counter());
+    }
     MOZ_ASSERT_IF(result.isMagic(), result.isMagic(JS_ION_ERROR));
     return result.isMagic() ? JitExec_Error : JitExec_Ok;
+    /*SECLAB  return the status of JIT execution(FastInvoke part) Add Counter*/
 }
 
 static void

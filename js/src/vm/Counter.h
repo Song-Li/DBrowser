@@ -15,9 +15,10 @@
 #endif
 
 extern volatile uint64_t counter;
-void inc_counter(uint64_t args);
+
+void inc_counter(uint64_t args, JSContext* cx=NULL);
 uint64_t get_counter(void);
-bool set_counter(uint64_t time);
+void set_counter(uint64_t time);
 void reset_counter();
 uint64_t get_scaled_counter(uint64_t args);
 
@@ -30,5 +31,4 @@ void disable_reset();
 bool getNow();
 
 void setNow(bool now);
-
 #endif
