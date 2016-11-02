@@ -460,6 +460,19 @@ js::RunScript(JSContext* cx, RunState& state)
     /*SECLAB*/
    // if (get_counter()<100000)
     printf("Inter Interpret part    Counter: %d CX: %x thread: %lx\n", get_counter(), cx, pthread_self());
+
+    jsbytecode* pc;
+    JSScript* script = cx->currentScript(&pc);
+    if (script!=NULL){
+        //printf("%lx", script);
+        if (script->scriptSource()->hasSourceData()) {
+          JSString* srcJS= script->sourceData(cx);
+
+          if (srcJS)
+            printf("thread %lx, code: %s\n", pthread_self(), JS_EncodeString(cx, srcJS));
+        }
+    }
+
     /*SECLAB*/
     return Interpret(cx, state);
 }
@@ -1653,7 +1666,7 @@ Interpret(JSContext* cx, RunState& state)
      __SUNPRO_C >= 0x570)
 // Non-standard but faster indirect-goto-based dispatch.
 # define INTERPRETER_LOOP()
-# define CASE(OP)                 label_##OP: printf(" "#OP" thread: %lx \n",pthread_self());
+# define CASE(OP)                 label_##OP:
 # define DEFAULT()                label_default:
 # define DISPATCH_TO(OP)          goto* addresses[(OP)]
 
@@ -1675,7 +1688,7 @@ Interpret(JSContext* cx, RunState& state)
 #else
 // Portable switch-based dispatch.
 # define INTERPRETER_LOOP()       the_switch: switch (switchOp)
-# define CASE(OP)                 case OP: printf(" "#OP" thread: %lx \n",pthread_self());
+# define CASE(OP)                 case OP: 
 # define DEFAULT()                default:
 # define DISPATCH_TO(OP)                                                      \
     JS_BEGIN_MACRO                                                            \
