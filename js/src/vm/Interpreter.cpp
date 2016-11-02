@@ -108,7 +108,7 @@ uint64_t get_counter(void) {
 }
 
 bool set_counter(uint64_t time) {
-    if(!set_flag || time <= get_counter()){
+    if(!set_flag || time <= get_counter() ){
         //printf("set fail: %ld\n",time);
         return false;
     }
@@ -1842,7 +1842,7 @@ Interpret(JSContext* cx, RunState& state)
 #define INIT_COVERAGE()                                                       \
     JS_BEGIN_MACRO                                                            \
           const char * filename = script->filename();                         \
-          if (strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL || strstr(filename, "self-hosted") != NULL )                                     \
+          if (strstr(filename, "file://")!=NULL || strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL || strstr(filename, "self-hosted") != NULL )                                     \
             isSystem = true;                                                  \
           else                                                                \
             isSystem = false;                                                 \
