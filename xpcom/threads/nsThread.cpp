@@ -1177,20 +1177,19 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
           //if(isBreak)printf("null\n");
           if(!isBreak && flagEvent != NULL){
             event = flagEvent;
-            printf("not null\n");
             //if(*temExpTime > get_counter()){
               //doset = set_counter(*temExpTime);
               //disable_reset();
             //}
           }
           doset = set_counter(*temExpTime);
-          disable_reset();
+          if(doset)disable_reset();
           flagEvent = NULL;
         }
         //else if(!*isFlag && *temExpTime > get_counter())set_counter(*temExpTime);
         else if(!*isFlag){
             doset = set_counter(*temExpTime);
-            disable_reset();
+            if(doset)disable_reset();
         }
         this->expTime = (get_counter()+1e4);
       }
@@ -1202,10 +1201,10 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
 
       event->Run();
 
-      if(getNow())set_counter(*temExpTime);
+      //if(getNow())set_counter(*temExpTime);
       //if(doset && MAIN_THREAD == mIsMainThread) //printf("//////////////////%ld,%lx,%lx\n",get_counter(),pthread_self(),getJSThread());
       //if(getNow() && MAIN_THREAD == mIsMainThread)printf("--------------%ld,%lx,%lx\n",get_counter(),pthread_self(),getJSThread());
-      setNow(false);
+      //setNow(false);
 
     } else if (aMayWait) {
       MOZ_ASSERT(ShuttingDown(),

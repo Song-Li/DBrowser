@@ -76,16 +76,18 @@ uint64_t jsThread=0;
 
 bool isSystem = true;
 
+bool stop = false;
+
+bool set_flag = true;
+
+int isNow = 0;
+
 uint64_t getJSThread(){
     return jsThread;
 }
 
 void inc_counter(uint64_t args, JSContext* cx) {
     //printf("JS thread : %ld\n",pthread_self());
-   /* if(jsThread==0){
-      jsThread=pthread_self();
-      printf("jsThread: %lx\n",jsThread);
-    }*/
     uint64_t c = (uint64_t)args;
     if (cx!=NULL)
         defaultCx = cx;
@@ -105,9 +107,17 @@ uint64_t get_counter(void) {
     return counter;
 }
 
-void set_counter(uint64_t time) {
+bool set_counter(uint64_t time) {
+    if(!set_flag || time <= get_counter()){
+        //printf("set fail: %ld\n",time);
+        return false;
+    }
+    //printf("set counter: %ld\n",counter);
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
-    counter=time;
+    //if (defaultCx!=NULL)
+      //  mapCounter[defaultCx] = time;
+    //counter=time;
+    return true;
 }
 
 void reset_counter() {
@@ -116,6 +126,24 @@ void reset_counter() {
 
 uint64_t get_scaled_counter(uint64_t args) {
     return counter/args;
+}
+
+void enable_reset(){
+    set_flag = true;
+}
+
+void disable_reset(){
+    set_flag = false;
+}
+
+bool getNow(){
+    bool result = isNow > 0;
+    if(isNow > 0)isNow--;
+    return result;
+}
+
+void setNow(bool now){
+    if(now) isNow++;
 }
 /*SECLAB-END*/
 
@@ -126,15 +154,9 @@ using mozilla::PodCopy;
 using JS::ForOfIterator;
 
 //SECLAB BEGIN 10/21/2016
-volatile uint64_t counter = 0;
+/*volatile uint64_t counter = 0;
 
 uint64_t jsThread=0;
-
-bool stop = false;
-
-bool set_flag = true;
-
-int isNow = 0;
 
 //mozilla::Mutex mCounterLock("mCounterLock");
 
@@ -175,25 +197,7 @@ void reset_counter() {
 
 uint64_t get_scaled_counter(uint64_t args) {
 	return counter/args;
-}
-
-void enable_reset(){
-    set_flag = true;
-}
-
-void disable_reset(){
-    set_flag = false;
-}
-
-bool getNow(){
-    bool result = isNow > 0;
-    if(isNow > 0)isNow--;
-    return result;
-}
-
-void setNow(bool now){
-    if(now) isNow++;
-}
+}*/
 /*SECLAB-END*/
 
 template <bool Eq>
