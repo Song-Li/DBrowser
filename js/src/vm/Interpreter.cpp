@@ -1765,7 +1765,6 @@ Interpret(JSContext* cx, RunState& state)
 #define INIT_COVERAGE()                                                       \
     JS_BEGIN_MACRO                                                            \
           const char * filename = script->filename();                         \
-          printf("thread1 %lx, file: %s\n", pthread_self(), script->filename());\
           if (strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL || strstr(filename, "self-hosted") != NULL )                                     \
             isSystem = true;                                                  \
           else                                                                \
