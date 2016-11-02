@@ -6,6 +6,9 @@
 
 #include "PerformanceWorker.h"
 #include "WorkerPrivate.h"
+/*SECLAB*/
+#include "../../js/src/vm/Counter.h"
+/*SECLAB*/
 
 //SECLAB BEGIN 10/03/2016
 #include "../../js/src/vm/Counter.h"
@@ -32,12 +35,17 @@ PerformanceWorker::Now() const
 {
 
   //SECLAB BEGIN 10/21/2016
+  printf("PerformanceWorker %ld\n", get_counter());
   return get_counter();
   //SECLAB END
 
   TimeDuration duration =
     TimeStamp::Now() - mWorkerPrivate->NowBaseTimeStamp();
-  return RoundTime(duration.ToMilliseconds());
+  //return RoundTime(duration.ToMilliseconds());
+  /*SECLAB*/
+  //printf("PerformanceWorker, %d\n", get_counter());
+  return (double)get_counter() / (1e7);
+  /*SECLAB*/
 }
 
 // To be removed once bug 1124165 lands

@@ -57,12 +57,95 @@
 #include "vm/Probes-inl.h"
 #include "vm/Stack-inl.h"
 
-/* CSE403-BEGIN : include counter.h*/
+/* SECLAB include counter.h*/
 #include "Counter.h"
-/* CSE403-END */
+#include <map>
+/* CECLAB */
 
 using namespace js;
 using namespace js::gc;
+
+//SECLAB BEGIN 10/21/2016
+volatile uint64_t counter = 0;
+
+std::map<JSContext*, volatile uint64_t> mapCounter;
+
+JSContext* defaultCx = NULL;
+
+uint64_t jsThread=0;
+
+bool isSystem = true;
+
+bool stop = false;
+
+bool set_flag = true;
+
+int isNow = 0;
+
+uint64_t getJSThread(){
+    return jsThread;
+}
+
+void inc_counter(uint64_t args, JSContext* cx) {
+    //printf("JS thread : %ld\n",pthread_self());
+    uint64_t c = (uint64_t)args;
+    if (cx!=NULL)
+        defaultCx = cx;
+    if (cx!=NULL && !isSystem) {
+        defaultCx = cx;
+        mapCounter[cx] += c;
+    }
+    counter += c;
+    JS_COUNTER_LOG("counter %i inc %i", counter, c);
+}
+
+uint64_t get_counter(void) {
+    JS_COUNTER_LOG("counter : %i", __FUNCTION__, counter);
+    //printf("counter get:%i\n", counter);
+    if (defaultCx!=NULL)
+        return mapCounter[defaultCx];
+    return counter;
+}
+
+bool set_counter(uint64_t time) {
+    if(!set_flag || time <= get_counter()){
+        //printf("set fail: %ld\n",time);
+        return false;
+    }
+    //printf("set counter: %ld\n",counter);
+    JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
+    if (defaultCx!=NULL)
+        mapCounter[defaultCx] = time;
+    //counter=time;
+    return true;
+}
+
+void reset_counter() {
+    counter = 1;
+}
+
+uint64_t get_scaled_counter(uint64_t args) {
+    return counter/args;
+}
+
+void enable_reset(){
+    set_flag = true;
+}
+
+void disable_reset(){
+    set_flag = false;
+}
+
+bool getNow(){
+    bool result = isNow > 0;
+    if(isNow > 0)isNow--;
+    return result;
+}
+
+void setNow(bool now){
+    if(now) isNow++;
+}
+/*SECLAB-END*/
 
 using mozilla::ArrayLength;
 using mozilla::DebugOnly;
@@ -71,19 +154,21 @@ using mozilla::PodCopy;
 using JS::ForOfIterator;
 
 //SECLAB BEGIN 10/21/2016
-volatile uint64_t counter = 0;
+/*volatile uint64_t counter = 0;
 
 uint64_t jsThread=0;
+
+//mozilla::Mutex mCounterLock("mCounterLock");
 
 uint64_t getJSThread(){
     return jsThread;
 }
 
 void inc_counter(uint64_t args) {
-    //printf("JS thread : %ld\n",pthread_self());
+    //mozilla::MutexAutoLock lock(mCounterLock);
     if(jsThread==0){
       jsThread=pthread_self();
-      printf("jsThread: %lx\n",jsThread);
+      //printf("jsThread: %lx\n",jsThread);
     }
     uint64_t c = (uint64_t)args;
     counter += c;
@@ -91,13 +176,19 @@ void inc_counter(uint64_t args) {
 }
 
 uint64_t get_counter(void) {
+    //mozilla::MutexAutoLock lock(mCounterLock);
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, counter);
     return counter;
 }
 
-void set_counter(uint64_t time) {
+bool set_counter(uint64_t time) {
+    //return false;
+    if(!set_flag || time <= counter)return false;
+    //if(!set_flag)return false;
+    //printf("set time: %ld\n", time);
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
     counter=time;
+    return true;
 }
 
 void reset_counter() {
@@ -106,7 +197,7 @@ void reset_counter() {
 
 uint64_t get_scaled_counter(uint64_t args) {
 	return counter/args;
-}
+}*/
 /*SECLAB-END*/
 
 template <bool Eq>
@@ -440,6 +531,29 @@ js::RunScript(JSContext* cx, RunState& state)
         TypeMonitorCall(cx, invoke.args(), invoke.constructing());
     }
 
+    /*SECLAB*/
+   // if (get_counter()<100000)
+   // printf("Inter Interpret part    Counter: %d CX: %x thread: %lx\n", get_counter(), cx, pthread_self());
+
+   /* jsbytecode* pc;
+    JSScript* script = cx->currentScript(&pc);
+    isSystem = false;
+    if (script!=NULL){
+        //printf("%lx", script);
+        if (script->scriptSource()->hasSourceData()) {
+          JSString* srcJS= script->sourceData(cx);
+          const char * filename = script->filename();
+          printf("thread %lx, file: %s\n", pthread_self(), script->filename());
+          if (strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL)
+            isSystem = true;
+          else
+            isSystem = false;
+          if (srcJS)
+             printf("thread %lx, isSystem: %d, code: %s\n", pthread_self(), isSystem,  JS_EncodeString(cx, srcJS));
+        }
+    }*/
+
+    /*SECLAB*/
     return Interpret(cx, state);
 }
 #ifdef _MSC_VER
@@ -1688,6 +1802,7 @@ Interpret(JSContext* cx, RunState& state)
     JS_BEGIN_MACRO                                                            \
         inc_counter(1);                                                       \
         REGS.pc += (N);                                                       \
+        if (N!=0) inc_counter(1,cx);                                                       \
         SANITY_CHECKS();                                                      \
         DISPATCH_TO(*REGS.pc | activation.opMask());                          \
     JS_END_MACRO
@@ -1726,6 +1841,11 @@ Interpret(JSContext* cx, RunState& state)
      */
 #define INIT_COVERAGE()                                                       \
     JS_BEGIN_MACRO                                                            \
+          const char * filename = script->filename();                         \
+          if (strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL || strstr(filename, "self-hosted") != NULL )                                     \
+            isSystem = true;                                                  \
+          else                                                                \
+            isSystem = false;                                                 \
         if (!script->hasScriptCounts()) {                                     \
             if (cx->compartment()->collectCoverageForDebug()) {               \
                 if (!script->initScriptCounts(cx))                            \

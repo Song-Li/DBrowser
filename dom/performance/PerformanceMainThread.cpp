@@ -6,6 +6,9 @@
 
 #include "PerformanceMainThread.h"
 #include "PerformanceNavigation.h"
+ /*SECLAB*/
+ #include "../../js/src/vm/Counter.h"
+ /*SECLAB*/
 
 //SECLAB BEGIN 10/03/2016
 #include "../../js/src/vm/Counter.h"
@@ -116,6 +119,9 @@ DOMHighResTimeStamp
 PerformanceMainThread::Now() const
 {
   //SECLAB BEGIN 10/21/2016
+  //printf("PerformanceMainThread %ld\n", get_counter());
+  enable_reset();
+  //setNow(true);
   return get_counter();
   //SECLAB END
   return RoundTime(GetDOMTiming()->TimeStampToDOMHighRes(TimeStamp::Now()));
