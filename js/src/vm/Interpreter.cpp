@@ -82,19 +82,16 @@ uint64_t getJSThread(){
 
 void inc_counter(uint64_t args, JSContext* cx) {
     //printf("JS thread : %ld\n",pthread_self());
-    if(jsThread==0){
+   /* if(jsThread==0){
       jsThread=pthread_self();
       printf("jsThread: %lx\n",jsThread);
-    }
+    }*/
     uint64_t c = (uint64_t)args;
     if (cx!=NULL)
         defaultCx = cx;
     if (cx!=NULL && !isSystem) {
         defaultCx = cx;
         mapCounter[cx] += c;
-    }
-    else {
-        printf("error! thread: %lx\n", pthread_self());    
     }
     counter += c;
     JS_COUNTER_LOG("counter %i inc %i", counter, c);
@@ -105,8 +102,6 @@ uint64_t get_counter(void) {
     //printf("counter get:%i\n", counter);
     if (defaultCx!=NULL)
         return mapCounter[defaultCx];
-    else
-        printf("error!! thread: %lx\n", pthread_self());
     return counter;
 }
 
@@ -463,9 +458,9 @@ js::RunScript(JSContext* cx, RunState& state)
 
     /*SECLAB*/
    // if (get_counter()<100000)
-    printf("Inter Interpret part    Counter: %d CX: %x thread: %lx\n", get_counter(), cx, pthread_self());
+   // printf("Inter Interpret part    Counter: %d CX: %x thread: %lx\n", get_counter(), cx, pthread_self());
 
-    jsbytecode* pc;
+   /* jsbytecode* pc;
     JSScript* script = cx->currentScript(&pc);
     isSystem = false;
     if (script!=NULL){
@@ -481,7 +476,7 @@ js::RunScript(JSContext* cx, RunState& state)
           if (srcJS)
              printf("thread %lx, isSystem: %d, code: %s\n", pthread_self(), isSystem,  JS_EncodeString(cx, srcJS));
         }
-    }
+    }*/
 
     /*SECLAB*/
     return Interpret(cx, state);
@@ -1769,17 +1764,12 @@ Interpret(JSContext* cx, RunState& state)
      */
 #define INIT_COVERAGE()                                                       \
     JS_BEGIN_MACRO                                                            \
-        if (script->scriptSource()->hasSourceData()) {  \
-          JSString* srcJS= script->sourceData(cx);\
-           if (srcJS)\
-             printf("thread1 %lx, isSystem: %d, code: %s\n", pthread_self(), isSystem,  JS_EncodeString(cx, srcJS));\
-          }              \
-          const char * filename = script->filename();\
+          const char * filename = script->filename();                         \
           printf("thread1 %lx, file: %s\n", pthread_self(), script->filename());\
-          if (strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL || strstr(filename, "self-hosted") != NULL )\
-            isSystem = true;\
-          else\
-            isSystem = false;\
+          if (strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL || strstr(filename, "self-hosted") != NULL )                                     \
+            isSystem = true;                                                  \
+          else                                                                \
+            isSystem = false;                                                 \
         if (!script->hasScriptCounts()) {                                     \
             if (cx->compartment()->collectCoverageForDebug()) {               \
                 if (!script->initScriptCounts(cx))                            \
