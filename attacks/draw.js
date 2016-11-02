@@ -1,11 +1,12 @@
 google.charts.load('current', {packages: ['corechart', 'line', 'table']});
 google.charts.setOnLoadCallback(drawBasic);
 
-function drawBasic(array) {
+function drawBasic() {
   var data = new google.visualization.DataTable();
   data.addColumn('number', 'X');
   data.addColumn('number', 'Dogs');
 
+  array = doJob();
   data.addRows(array);
 
   var options = {
