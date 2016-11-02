@@ -31,6 +31,8 @@
 
 #endif
 
+#include "vm/Counter.h"
+
 #ifdef XP_UNIX
 
 #ifdef _SVID_GETTOD   /* Defined only on Solaris, see Solaris <sys/types.h> */
@@ -47,6 +49,9 @@ using mozilla::DebugOnly;
 int64_t
 PRMJ_Now()
 {
+//printf("counter get:%i\n", counter);
+    return (int64_t)get_counter();
+
     struct timeval tv;
 
 #ifdef _SVID_GETTOD   /* Defined only on Solaris, see Solaris <sys/types.h> */

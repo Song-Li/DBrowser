@@ -59,6 +59,7 @@
 
 /* SECLAB include counter.h*/
 #include "Counter.h"
+#include <map>
 /* CECLAB */
 
 using namespace js;
@@ -67,25 +68,41 @@ using namespace js::gc;
 //SECLAB BEGIN 10/21/2016
 volatile uint64_t counter = 0;
 
+std::map<JSContext*, volatile uint64_t> mapCounter;
+
+JSContext* defaultCx = NULL;
+
 uint64_t jsThread=0;
 
 uint64_t getJSThread(){
     return jsThread;
 }
 
-void inc_counter(uint64_t args) {
+void inc_counter(uint64_t args, JSContext* cx) {
     //printf("JS thread : %ld\n",pthread_self());
     if(jsThread==0){
       jsThread=pthread_self();
       printf("jsThread: %lx\n",jsThread);
     }
     uint64_t c = (uint64_t)args;
+    if (cx!=NULL) {
+        defaultCx = cx;
+        mapCounter[cx] += c;
+    }
+    else {
+        printf("error!\n");    
+    }
     counter += c;
     JS_COUNTER_LOG("counter %i inc %i", counter, c);
 }
 
 uint64_t get_counter(void) {
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, counter);
+    //printf("counter get:%i\n", counter);
+    if (defaultCx!=NULL)
+        return mapCounter[defaultCx];
+    else
+        printf("error!!\n");
     return counter;
 }
 
@@ -441,7 +458,8 @@ js::RunScript(JSContext* cx, RunState& state)
     }
 
     /*SECLAB*/
-    printf("Inter Interpret part    Counter: %d \n", get_counter());
+   // if (get_counter()<100000)
+    printf("Inter Interpret part    Counter: %d CX: %x thread: %lx\n", get_counter(), cx, pthread_self());
     /*SECLAB*/
     return Interpret(cx, state);
 }
@@ -1635,7 +1653,7 @@ Interpret(JSContext* cx, RunState& state)
      __SUNPRO_C >= 0x570)
 // Non-standard but faster indirect-goto-based dispatch.
 # define INTERPRETER_LOOP()
-# define CASE(OP)                 label_##OP:
+# define CASE(OP)                 label_##OP: printf(" "#OP" thread: %lx \n",pthread_self());
 # define DEFAULT()                label_default:
 # define DISPATCH_TO(OP)          goto* addresses[(OP)]
 
@@ -1657,7 +1675,7 @@ Interpret(JSContext* cx, RunState& state)
 #else
 // Portable switch-based dispatch.
 # define INTERPRETER_LOOP()       the_switch: switch (switchOp)
-# define CASE(OP)                 case OP:
+# define CASE(OP)                 case OP: printf(" "#OP" thread: %lx \n",pthread_self());
 # define DEFAULT()                default:
 # define DISPATCH_TO(OP)                                                      \
     JS_BEGIN_MACRO                                                            \
@@ -1689,7 +1707,7 @@ Interpret(JSContext* cx, RunState& state)
 #define ADVANCE_AND_DISPATCH(N)                                               \
     JS_BEGIN_MACRO                                                            \
         REGS.pc += (N);                                                       \
-        inc_counter(1);                                                       \
+        if (N!=0) inc_counter(1,cx);                                                       \
         SANITY_CHECKS();                                                      \
         DISPATCH_TO(*REGS.pc | activation.opMask());                          \
     JS_END_MACRO
