@@ -1,3 +1,4 @@
+//Modified at Thu 03 Nov 2016 05:44:52 PM UTC
 var res_array = [];
 var count = {};
 var payload = 15; 
@@ -42,11 +43,15 @@ function addToRes(cur_size, during) {
 
 function get_res(cur_size) {
   var mean = 0;
+  /*
   for(var r in res_array) {
     if(r < max_ignore) continue;
     mean += res_array[r];
   }
   mean /= (res_array.length - max_ignore);
+  */
+  res_array.sort();
+  mean = res_array[Math.floor(res_array.length / 2)];
   document.getElementById("result").innerHTML += mean.toString() + '<br>';
   return mean;
 }
