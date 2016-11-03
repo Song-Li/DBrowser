@@ -26,6 +26,7 @@ function run(cur_size) {
 
 
 function addToRes(cur_size, during) {
+  if(cur_size == 0) return ;
   res_array.push(during); 
   if(count[during] === undefined) {
     count[during] = 0;
