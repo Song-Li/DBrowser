@@ -1,1 +1,1 @@
-cp -rf ./* ~/../site/dm/tests/ 
+cp -rf ./* ~/projs/tests/ 
