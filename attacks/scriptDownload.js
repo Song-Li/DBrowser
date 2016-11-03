@@ -8,7 +8,7 @@ var ran = 0;
 var avg = [];
 var max_size = 20;
 var max_ignore = 6;
-var scale = 5;
+var scale = 1;
 
 function run(cur_size) {
   var file_name = (cur_size * scale).toString() + "M.js";
