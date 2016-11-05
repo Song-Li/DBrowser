@@ -106,7 +106,6 @@ function clockEdgeAttack()
 	 */
 	var duration = sumTime + ((exp-remain)/exp) * grain * times;
 
-
 	/*
 	 * print out the result
 	 */
@@ -115,5 +114,4 @@ function clockEdgeAttack()
 	document.write("grain:" + grain + "<br/>");
 	document.write("Original Time of doSomething: " + orign + " milliseconds.<br/>"); 
 	document.write("Accurate Time of doSomething: " + ( duration / times ) + " milliseconds.<br/>");
-	
 }
