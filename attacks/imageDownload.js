@@ -11,7 +11,7 @@ var max_ignore = 6;
 var scale = 1;
 
 function run(cur_size) {
-  var file_name = (cur_size * scale).toString() + ".jpg";
+  var file_name = "files/" + (cur_size * scale).toString() + ".jpg";
   var element_s = document.createElement('img');
   start = performance.now();
   document.body.appendChild(element_s);

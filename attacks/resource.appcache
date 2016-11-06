@@ -1,9 +1,0 @@
-CACHE MANIFEST
-CACHE:
-http://128.180.123.148/TestFile/50k.html
-http://128.180.123.148/TestFile/60k.html
-http://128.180.123.148/TestFile/150k.html
-http://128.180.123.148/TestFile/250k.html
-
-NETWORK:
-*
