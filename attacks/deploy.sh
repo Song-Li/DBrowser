@@ -1,1 +1,1 @@
-cp -rf ./* ~/projs/tests/ 
+cp ./* ~/projs/tests/ 
