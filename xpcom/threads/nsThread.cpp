@@ -700,37 +700,14 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
       if(currentThread->expTime > 1e6){
         std::string nameString(threadName);
-        //if(nameString.find("DOM") != std::string::npos){
-          if(currentThread->expTime != 0)temExpTime = currentThread->expTime;
-          //printf("%s,%ld\n", threadName, currentThread->expTime);
-        //}
-        /*std::string nameString(threadName);
-        if(nameString.find("Im") != std::string::npos){
-          if(getFlag() && flagExpTime == currentThread->expTime){
-            printf("release: %ld\n",currentThread->expTime);
-            setFlag(false);
-            printf("change flag: %ld\n",flag);
-            flagEvent = event.get();
-            put = false;
-          }
-          else{
-            temExpTime = currentThread->expTime;
-            bool s = mEventsRoot.SecSwapRunnable(event.get(), currentThread->expTime, lock);
-            put = false;
-            if(s){
-              printf("swap: %ld,%d\n",currentThread->expTime,s);
-            }
-          }
-        }*/
+        if(currentThread->expTime != 0)temExpTime = currentThread->expTime;
         if(getFlag() && flagExpTime == temExpTime){
-          //printf("release: %ld\n",temExpTime);
           setFlag(false);
           flagEvent = event.get();
           put = false;
         }
         else{
           bool s = mEventsRoot.SecSwapRunnable(event.get(), temExpTime, lock);
-          //printf("swap: %ld,%d\n",temExpTime,s);
           put = false;
         }
       }
@@ -742,9 +719,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
       temExpTime = currentThread->expTime;
     }
     else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread != MAIN_THREAD){
-      if(currentThread->expTime > 1e6){
-        currentThread->putFlag(currentThread->expTime);
-      }
+    currentThread->putFlag(currentThread->expTime);
       temExpTime = currentThread->expTime;
     }
     else{
@@ -1160,33 +1135,23 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
         if(*isFlag && *temExpTime > 1e6){
           setFlag(true);
           flagExpTime = *temExpTime;
-          //printf("block: %ld\n",*temExpTime);
           int i=0;
           bool temFlag = getFlag();
           bool isBreak = false;
           while(temFlag){
             temFlag = getFlag();
-            //if(get_counter() - flagExpTime > 10000)break;
-            if(i++ > 1e5){
-              //printf("timeout--------------\n");
+            if(i++ > 1e3){
               isBreak = true;
               break;
             }
           }
-          //printf("unlock: %ld\n",*temExpTime);
-          //if(isBreak)printf("null\n");
           if(!isBreak && flagEvent != NULL){
             event = flagEvent;
-            //if(*temExpTime > get_counter()){
-              //doset = set_counter(*temExpTime);
-              //disable_reset();
-            //}
           }
           doset = set_counter(*temExpTime);
           if(doset)disable_reset();
           flagEvent = NULL;
         }
-        //else if(!*isFlag && *temExpTime > get_counter())set_counter(*temExpTime);
         else if(!*isFlag){
             doset = set_counter(*temExpTime);
             if(doset)disable_reset();
@@ -1200,11 +1165,6 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       //SECLAB END
 
       event->Run();
-
-      //if(getNow())set_counter(*temExpTime);
-      //if(doset && MAIN_THREAD == mIsMainThread) //printf("//////////////////%ld,%lx,%lx\n",get_counter(),pthread_self(),getJSThread());
-      //if(getNow() && MAIN_THREAD == mIsMainThread)printf("--------------%ld,%lx,%lx\n",get_counter(),pthread_self(),getJSThread());
-      //setNow(false);
 
     } else if (aMayWait) {
       MOZ_ASSERT(ShuttingDown(),
