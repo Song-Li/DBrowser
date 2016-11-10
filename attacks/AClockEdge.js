@@ -1,6 +1,6 @@
 var start = 0;
 var end = 0;
-var count = 1e6;
+var count = 1e5;
 var times = 100;
 var time = 1;
 var sum = 0;
@@ -22,8 +22,8 @@ function toEdge(){
 }
 
 function cb(){
-  end = performance.now();
   getSeverTime();
+  end = performance.now();
   //document.write("time: "+(end - start)+"<br/>");
   sum += end - start;
   if(time++ < times)learn();
