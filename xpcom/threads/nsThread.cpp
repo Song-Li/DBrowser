@@ -691,39 +691,68 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     }
 
     //SECLAB BEGIN 10/21/2016
+    /*Only main thread uses priority queue*/
     mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
     uint64_t temExpTime=get_counter();
     nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
     const char *threadName = PR_GetThreadName(PR_GetCurrentThread());
     bool put = true;
+    uint64_t defaultExpTime = 100;
 
+    /*Non main thread push event into main thread*/
     if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
-      if(currentThread->expTime > 1e6){
-        std::string nameString(threadName);
-        if(currentThread->expTime != 0)temExpTime = currentThread->expTime;
+      //printf("nm putevent to m\n");
+      /*If the event is created by main thread,
+      it should releases the current lock or
+      replaces its flag in queue or
+      simply be pushed into queue(if its flag has been already pop)*/
+      if(currentThread->expTime != 0){
+        //std::string nameString(threadName);
+        temExpTime = currentThread->expTime;
+        currentThread->expTime = 0;
+
+        //If main thread is locked and the expTime of flag equals to event's expTime
         if(getFlag() && flagExpTime == temExpTime){
+          printf("release\n");
+          //no need to push in tanditional way
+          if(threadName != NULL)printf("%s\n",threadName);
+          put = false;
           setFlag(false);
           flagEvent = event.get();
-          put = false;
         }
+        //Check if there is flag in queue. If there is flag, replace it, else directly enter the queue
         else{
-          bool s = mEventsRoot.SecSwapRunnable(event.get(), temExpTime, lock);
+          //printf("%s\n",threadName);
+          //printf("%ld,%ld\n",currentThread->expTime,get_counter());
           put = false;
+          //queue->PutEvent(event.take(), lock, temExpTime, false);
+          temExpTime = get_counter();
+          bool s = mEventsRoot.SecSwapRunnable(event.get(), temExpTime, lock);
+          //printf("endsec\n");
         }
+        //temExpTime = get_counter();
       }
+      /*If the event is created by non main thread, it's pushed with current time*/
       else{
         temExpTime = get_counter();
       }
     }
+    /*main thread push event to itself*/
     else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread == MAIN_THREAD){
-      temExpTime = currentThread->expTime;
+      //printf("m putevent to m\n");
+      temExpTime = get_counter();
     }
+    /*If main thread create an event and push to an non main thread, the event's expTime is created and passed to target thread*/
     else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread != MAIN_THREAD){
-    currentThread->putFlag(currentThread->expTime);
-      temExpTime = currentThread->expTime;
+      //printf("m putevent to nm\n");
+      temExpTime = get_counter() + defaultExpTime;
+      currentThread->putFlag(temExpTime);
     }
+    /*Non main thread push event to non main thread, just pass the expTime*/
     else{
+      //printf("nm putevent to nm\n");
       temExpTime = currentThread->expTime;
+      currentThread->expTime = 0;
     }
 
     if(put)queue->PutEvent(event.take(), lock, temExpTime, false);
@@ -747,8 +776,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
 
 //SECLAB BEGIN 10/22/2016
 void nsThread::putFlag(uint64_t expTime){
-  if( mIsMainThread != MAIN_THREAD || expTime < 1000000)return;
-  //printf("put flag: %ld\n", expTime);
+  if( mIsMainThread != MAIN_THREAD )return;
   MutexAutoLock lock(mLock);
   nsIRunnable* flagEvent = new Runnable();
   //printf("put flag:%ld\n", expTime);
@@ -1128,39 +1156,56 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       //SECLAB BEGIN 10/21/2016
 
       nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
+      const char *threadName = PR_GetThreadName(PR_GetCurrentThread());
 
       bool doset = false;
 
+      bool dorun = true;
+
       if (MAIN_THREAD == mIsMainThread) {
-        if(*isFlag && *temExpTime > 1e6){
+        //printf("main nextevent\n");
+        //main thread need to block itself when it gets a flag from priority queue
+        if(*isFlag && *temExpTime > get_counter() && *temExpTime <= get_counter() + 100){
           setFlag(true);
           flagExpTime = *temExpTime;
+          //printf("block %ld %ld\n",flagExpTime,get_counter());
+
           int i=0;
           bool temFlag = getFlag();
           bool isBreak = false;
           while(temFlag){
             temFlag = getFlag();
-            if(i++ > 1e3){
+            if(i++ > 1e6){
               isBreak = true;
-              break;
+              flagEvent = NULL;
+              setFlag(false);
             }
           }
-          if(!isBreak && flagEvent != NULL){
+
+          if(!isBreak){
+            //reset the counter before run the event
+            printf("set %ld %ld\n",*temExpTime,get_counter());
+            doset = set_counter(*temExpTime);
             event = flagEvent;
+            flagEvent = NULL;
           }
-          doset = set_counter(*temExpTime);
-          if(doset)disable_reset();
-          flagEvent = NULL;
+          //dorun = false;
+
+          //if(doset)disable_reset();
+          //event = flagEvent;
         }
         else if(!*isFlag){
-            doset = set_counter(*temExpTime);
-            if(doset)disable_reset();
+          //doset = set_counter(*temExpTime);
+          //if(doset)disable_reset();
         }
-        this->expTime = (get_counter()+1e4);
       }
-      else{
-        if(*temExpTime != 0)this->expTime = *temExpTime;
-        else this->expTime = get_counter();
+      //non main thread just pass the expTime
+      if (MAIN_THREAD != mIsMainThread){
+        if(*temExpTime > 0){
+          //printf("non main nextevent:%ld,%ld,%ld\n",this->expTime,*temExpTime,get_counter());
+          this->expTime = *temExpTime;
+        }
+        else this->expTime = 0;
       }
       //SECLAB END
 

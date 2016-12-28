@@ -94,20 +94,29 @@ private:
   nsIRunnable** GetSetFlag(const uint64_t expTime, int flag) {
     Page* head = mHead;
     int offset = mOffsetHead;
+    if(head == NULL)return NULL;
+    int qsize = 1;
     while(head != mTail || offset != mOffsetTail) {
+      qsize++;
       if(offset == EVENTS_PER_PAGE) {
         offset = 0;
         head = head->mNext;
       }else {
+
         if(head->mExpTime[offset] == expTime) {
           //SECLAB Sun 23 Oct 2016 04:41:10 PM EDT START
-          head->mExpTime[offset] = (expTime >> 1 << 1 | flag);
+          head->mExpTime[offset] = (expTime >> 1 << 1);
+          //head->mExpTime[offset] = (expTime >> 1 << 1 | flag);
           //SECLAB Sun 23 Oct 2016 04:41:13 PM EDT END
+
+          //nsIRunnable*& queueLocation = head->mEvents[offset];
+          //printf("%d\n",qsize);
           return &(head->mEvents[offset]);
         }
         offset ++;
       }
     }
+    //printf("%d\n",qsize);
     return NULL;
   }
   //SECLAB Tue 18 Oct 2016 11:39:38 AM EDT END

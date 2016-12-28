@@ -15,7 +15,7 @@ function run(file_name) {
     cur ++;
     var end = performance.now();
     var res = end - start;
-    //console.log(start, end);
+    console.log(start, end);
     if(addToRes(res)) run(file_name);
   }
 
