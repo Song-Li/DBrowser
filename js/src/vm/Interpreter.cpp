@@ -59,6 +59,7 @@
 
 /* SECLAB include counter.h*/
 #include "Counter.h"
+#include <ctime>
 #include <map>
 /* CECLAB */
 
@@ -81,6 +82,8 @@ bool stop = false;
 bool set_flag = true;
 
 int isNow = 0;
+
+volatile uint64_t physical_base = static_cast<uint64_t>(time(0));
 
 uint64_t getJSThread(){
     return jsThread;
@@ -108,12 +111,13 @@ uint64_t get_counter(void) {
 }
 
 bool set_counter(uint64_t time) {
-    if(!set_flag || time <= get_counter() ){
+    /*if(!set_flag || time <= get_counter() ){
         //printf("set fail: %ld\n",time);
         return false;
-    }
+    }*/
     //printf("set counter: %ld\n",counter);
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
+    //printf("set %ld %ld\n",time,get_counter());
     if (defaultCx!=NULL)
         mapCounter[defaultCx] = time;
     //counter=time;
@@ -144,6 +148,10 @@ bool getNow(){
 
 void setNow(bool now){
     if(now) isNow++;
+}
+
+uint64_t getPhysicalBase(){
+    return physical_base;
 }
 /*SECLAB-END*/
 

@@ -15,6 +15,7 @@
 #endif
 
 extern volatile uint64_t counter;
+extern volatile uint64_t physical_base;
 
 void inc_counter(uint64_t args, JSContext* cx=NULL);
 uint64_t get_counter(void);
@@ -31,4 +32,7 @@ void disable_reset();
 bool getNow();
 
 void setNow(bool now);
+
+uint64_t getPhysicalBase();
+
 #endif

@@ -120,7 +120,6 @@ PerformanceMainThread::Now() const
 {
   //SECLAB BEGIN 10/21/2016
   //printf("PerformanceMainThread %ld\n", get_counter());
-  enable_reset();
   //setNow(true);
   return get_counter();
   //SECLAB END

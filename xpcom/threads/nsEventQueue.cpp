@@ -129,7 +129,6 @@ bool
 nsEventQueue::SecSwapRunnable(nsIRunnable* runnable, const uint64_t expTime, MutexAutoLock& aProofOfLock) {
   nsIRunnable** queueLocation = GetSetFlag(expTime << 1 | 1, 0);
   if(queueLocation) {
-    //PutEvent(runnable, aProofOfLock, expTime << 1);// The flag should be false here
     *queueLocation = runnable;
     return true;
   }
