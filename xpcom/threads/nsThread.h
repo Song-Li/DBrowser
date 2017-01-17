@@ -44,6 +44,8 @@ public:
   //SECLAB BEGIN 10/21/2016
   uint64_t expTime=0;
 
+  uint64_t add=0;
+
   uint64_t flagExpTime=0;
 
   std::set<std::string> nameSet;
