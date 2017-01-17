@@ -60,6 +60,7 @@
 /* SECLAB include counter.h*/
 #include "Counter.h"
 #include <ctime>
+#include <sys/time.h>
 #include <map>
 /* CECLAB */
 
@@ -83,7 +84,7 @@ bool set_flag = true;
 
 int isNow = 0;
 
-volatile uint64_t physical_base = static_cast<uint64_t>(time(0));
+volatile uint64_t physical_base = 0;
 
 uint64_t getJSThread(){
     return jsThread;
@@ -91,6 +92,11 @@ uint64_t getJSThread(){
 
 void inc_counter(uint64_t args, JSContext* cx) {
     //printf("JS thread : %ld\n",pthread_self());
+    if(physical_base == 0){
+      struct timeval tp;
+      gettimeofday(&tp, NULL);
+      physical_base = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+    }
     uint64_t c = (uint64_t)args;
     if (cx!=NULL)
         defaultCx = cx;

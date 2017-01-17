@@ -43,7 +43,6 @@
 #include "../../docshell/base/nsDocShell.h"
 #include <typeinfo>
 #include <ctime>
-#include <sys/time.h>
 #include <unistd.h>
 //SECLAB END
 
@@ -742,7 +741,9 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
       }
       //If the event is created by non main thread, it's pushed with current time
       else{
-        temExpTime = (static_cast<uint64_t>(time(0)) - getPhysicalBase()) * 10;
+        struct timeval tp;
+        gettimeofday(&tp, NULL);
+        temExpTime = tp.tv_sec * 1000 + tp.tv_usec / 1000 - getPhysicalBase();
         //temExpTime = get_counter();
       }
     }
@@ -1170,7 +1171,10 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
 
       if (MAIN_THREAD == mIsMainThread) {
 
-        uint64_t physical_time = (static_cast<uint64_t>(time(0)) - getPhysicalBase()) * 10;
+        struct timeval tp;
+        gettimeofday(&tp, NULL);
+        uint64_t physical_time = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+        physical_time -= getPhysicalBase();
         if(physical_time < get_counter())set_counter(physical_time);
         //printf("main run\n");
 
