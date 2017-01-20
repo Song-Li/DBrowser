@@ -699,7 +699,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
     const char *threadName = PR_GetThreadName(PR_GetCurrentThread());
     bool put = true;
-    uint64_t defaultExpTime = 100;
+    uint64_t defaultExpTime = 5;
 
     //uint64_t physical_time = static_cast<uint64_t>(time(0)) - getPhysicalBase();
 
@@ -712,29 +712,18 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
       //simply be pushed into queue(if its flag has been already pop)
 
       if(currentThread->expTime > 1e3){
-        //std::string nameString(threadName);
-        //printf("c:%ld,%ld\n",currentThread->expTime,get_counter());
         temExpTime = currentThread->expTime + currentThread->add;
 
         //If main thread is locked and the expTime of flag equals to event's expTime
         if(getFlag() && flagExpTime == temExpTime){
           //printf("release\n");
-          //no need to push in tanditional way
-          //if(threadName != NULL)printf("in:%s\n",threadName);
           flagEvent = event.get();
           put = false;
           setFlag(false);
         }
+
         //Check if there is flag in queue. If there is flag, replace it, else directly enter the queue
         else{
-          uint64_t present = get_counter();
-          if(temExpTime != present + defaultExpTime){
-            //printf("out:%ld,%ld\n",temExpTime,get_counter());
-          }else{
-            //printf("in:%ld,%ld\n",temExpTime,get_counter());
-            //temExpTime = present;
-          }
-          //printf("else:%ld,%ld\n",temExpTime,get_counter());
           bool r = queue->SecSwapRunnable(event.get(), temExpTime, lock);
           put = false;
         }
@@ -750,7 +739,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     //main thread push event to itself
     else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread == MAIN_THREAD){
       //printf("m putevent to m\n");
-      temExpTime = get_counter();
+      temExpTime = get_counter() + defaultExpTime;
     }
     // If main thread create an event and push to an non main thread, the event's expTime is created and passed to target thread
     else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread != MAIN_THREAD){
@@ -1175,7 +1164,12 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
         gettimeofday(&tp, NULL);
         uint64_t physical_time = tp.tv_sec * 1000 + tp.tv_usec / 1000;
         physical_time -= getPhysicalBase();
-        if(physical_time < get_counter())set_counter(physical_time);
+        /*while(physical_time < get_counter()){
+          gettimeofday(&tp, NULL);
+          physical_time = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+          physical_time -= getPhysicalBase();
+        }*/
+        //if(physical_time < get_counter())set_counter(physical_time);
         //printf("main run\n");
 
         //printf("main nextevent, %d\n",*temExpTime);
