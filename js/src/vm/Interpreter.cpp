@@ -58,10 +58,11 @@
 #include "vm/Stack-inl.h"
 
 /* SECLAB include counter.h*/
-#include "Counter.h"
 #include <ctime>
+#include "Counter.h"
 #include <sys/time.h>
 #include <map>
+#include <thread>
 /* CECLAB */
 
 using namespace js;
@@ -111,22 +112,19 @@ void inc_counter(uint64_t args, JSContext* cx) {
 uint64_t get_counter(void) {
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, counter);
     //printf("counter get:%i\n", counter);
-    if (defaultCx!=NULL)
-        return mapCounter[defaultCx];
+    //std::thread::id this_id = std::this_thread::get_id();
+    //printf("%ld\n",this_id);
+    //if (defaultCx!=NULL && mapCounter.find(defaultCx))return mapCounter[defaultCx];
     return counter;
 }
 
 bool set_counter(uint64_t time) {
-    /*if(!set_flag || time <= get_counter() ){
-        //printf("set fail: %ld\n",time);
-        return false;
-    }*/
+    if(time > 2*get_counter())return false;
     //printf("set counter: %ld\n",counter);
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
     //printf("set %ld %ld\n",time,get_counter());
-    if (defaultCx!=NULL)
-        mapCounter[defaultCx] = time;
-    //counter=time;
+    //if (defaultCx!=NULL)mapCounter[defaultCx] = time;
+    counter=time;
     return true;
 }
 
@@ -549,23 +547,21 @@ js::RunScript(JSContext* cx, RunState& state)
    // if (get_counter()<100000)
    // printf("Inter Interpret part    Counter: %d CX: %x thread: %lx\n", get_counter(), cx, pthread_self());
 
-   /* jsbytecode* pc;
+    jsbytecode* pc;
     JSScript* script = cx->currentScript(&pc);
     isSystem = false;
     if (script!=NULL){
-        //printf("%lx", script);
         if (script->scriptSource()->hasSourceData()) {
           JSString* srcJS= script->sourceData(cx);
-          const char * filename = script->filename();
+          /*const char * filename = script->filename();
           printf("thread %lx, file: %s\n", pthread_self(), script->filename());
           if (strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL)
             isSystem = true;
           else
-            isSystem = false;
-          if (srcJS)
-             printf("thread %lx, isSystem: %d, code: %s\n", pthread_self(), isSystem,  JS_EncodeString(cx, srcJS));
+            isSystem = false;*/
+          //if (srcJS)printf("thread %lx, isSystem: %d, code: %s\n", pthread_self(), isSystem,  JS_EncodeString(cx, srcJS));
         }
-    }*/
+    }
 
     /*SECLAB*/
     return Interpret(cx, state);
@@ -1814,9 +1810,9 @@ Interpret(JSContext* cx, RunState& state)
 //SECLAB BEGIN 10/21/2016
 #define ADVANCE_AND_DISPATCH(N)                                               \
     JS_BEGIN_MACRO                                                            \
-        inc_counter(1);                                                       \
+        inc_counter(1);                                                     \
         REGS.pc += (N);                                                       \
-        if (N!=0) inc_counter(1,cx);                                                       \
+        /*inc_counter(1,cx);  */                                                       \
         SANITY_CHECKS();                                                      \
         DISPATCH_TO(*REGS.pc | activation.opMask());                          \
     JS_END_MACRO
@@ -3069,6 +3065,9 @@ CASE(JSOP_CALLITER)
 CASE(JSOP_SUPERCALL)
 CASE(JSOP_FUNCALL)
 {
+    //set_counter(get_counter() + 100);
+    //printf("callfunc %d, %x\n",get_counter(),pthread_self());
+
     if (REGS.fp()->hasPushedSPSFrame())
         cx->runtime()->spsProfiler.updatePC(script, REGS.pc);
 

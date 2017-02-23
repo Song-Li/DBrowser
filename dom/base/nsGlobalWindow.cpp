@@ -11894,6 +11894,7 @@ uint32_t sNestingLevel;
 nsGlobalWindow*
 nsGlobalWindow::InnerForSetTimeoutOrInterval(ErrorResult& aError)
 {
+  printf("fff\n");
   nsGlobalWindow* currentInner;
   nsGlobalWindow* forwardTo;
   if (IsInnerWindow()) {

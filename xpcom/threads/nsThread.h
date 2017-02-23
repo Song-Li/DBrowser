@@ -144,9 +144,17 @@ protected:
   nsresult PutEvent(nsIRunnable* aEvent, nsNestedEventTarget* aTarget);
   nsresult PutEvent(already_AddRefed<nsIRunnable> aEvent,
                     nsNestedEventTarget* aTarget);
+  nsresult PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aTarget, uint64_t expTime);
 
   nsresult DispatchInternal(already_AddRefed<nsIRunnable> aEvent,
                             uint32_t aFlags, nsNestedEventTarget* aTarget);
+
+  NS_IMETHODIMP
+    Dispatch(already_AddRefed<nsIRunnable> aEvent, uint32_t aFlags, uint64_t expTime);
+
+  nsresult
+    DispatchInternal(already_AddRefed<nsIRunnable> aEvent, uint32_t aFlags,
+                           nsNestedEventTarget* aTarget, uint64_t exptime);
 
   struct nsThreadShutdownContext* ShutdownInternal(bool aSync);
 

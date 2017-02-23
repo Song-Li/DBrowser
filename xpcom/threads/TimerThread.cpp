@@ -20,6 +20,10 @@
 
 #include <math.h>
 
+//SECLAB BEGIN 10/03/2016
+#include "../../js/src/vm/Counter.h"
+//SECLAB END
+
 using namespace mozilla;
 #ifdef MOZ_TASK_TRACER
 #include "GeckoTaskTracerImpl.h"

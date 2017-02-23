@@ -238,6 +238,7 @@ nsTimerImpl::Shutdown()
 nsresult
 nsTimerImpl::InitCommon(uint32_t aDelay, uint32_t aType)
 {
+
   nsresult rv;
 
   if (NS_WARN_IF(!gThread)) {

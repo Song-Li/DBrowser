@@ -44,6 +44,8 @@
 #include <typeinfo>
 #include <ctime>
 #include <unistd.h>
+#include <thread>
+#include "nsThreadUtils.h"
 //SECLAB END
 
 #ifdef MOZ_CRASHREPORTER
@@ -677,8 +679,10 @@ nsThread::PutEvent(nsIRunnable* aEvent, nsNestedEventTarget* aTarget)
 }
 
 nsresult
-nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aTarget)
+nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aTarget, uint64_t expTime)
 {
+  //MessageLoop* ml = MessageLoop::current();
+  //printf("%ld\n",MessageLoop::current());
   // We want to leak the reference when we fail to dispatch it, so that
   // we won't release the event in a wrong thread.
   LeakRefPtr<nsIRunnable> event(Move(aEvent));
@@ -693,31 +697,82 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     }
 
     //SECLAB BEGIN 10/21/2016
+
+    if(expTime < get_counter())expTime = get_counter();
+
+    queue->PutEvent(event.take(), lock, expTime, false);
+
+    //queue->PutEvent(event.take(), lock);
+    //SECLAB END
+
+    // Make sure to grab the observer before dropping the lock, otherwise the
+    // event that we just placed into the queue could run and eventually delete
+    // this nsThread before the calling thread is scheduled again. We would then
+    // crash while trying to access a dead nsThread.
+    obs = mObserver;
+  }
+
+  if (obs) {
+    obs->OnDispatchedEvent(this);
+  }
+  return NS_OK;
+}
+
+nsresult
+nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aTarget)
+{
+  //MessageLoop* ml = MessageLoop::current();
+  //printf("%ld\n",MessageLoop::current());
+  // We want to leak the reference when we fail to dispatch it, so that
+  // we won't release the event in a wrong thread.
+  LeakRefPtr<nsIRunnable> event(Move(aEvent));
+  nsCOMPtr<nsIThreadObserver> obs;
+
+  {
+    MutexAutoLock lock(mLock);
+    nsChainedEventQueue* queue = aTarget ? aTarget->mQueue : &mEventsRoot;
+    if (!queue || (queue == &mEventsRoot && mEventsAreDoomed)) {
+      NS_WARNING("An event was posted to a thread that will never run it (rejected)");
+      return NS_ERROR_UNEXPECTED;
+    }
+
+    //SECLAB BEGIN 10/21/2016
+
+    bool onCurrent = false;
+    this->IsOnCurrentThread(&onCurrent);
+    //printf("%d,%d,%d\n", own, NS_IsMainThread(), currentThread1 == thread);
+
     /*Only main thread uses priority queue*/
     //mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
     uint64_t temExpTime = get_counter();
+    nsIThread* thread;
+    NS_GetMainThread(&thread);
+    nsThread* mainThread = ((nsThread*) thread);
     nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
     const char *threadName = PR_GetThreadName(PR_GetCurrentThread());
     bool put = true;
-    uint64_t defaultExpTime = 5;
+    uint64_t defaultExpTime = 1000;
 
-    //uint64_t physical_time = static_cast<uint64_t>(time(0)) - getPhysicalBase();
+    uint64_t physical_time = static_cast<uint64_t>(time(0)) - getPhysicalBase();
 
     //Non main thread push event into main thread
-    if(currentThread->mIsMainThread != MAIN_THREAD && mIsMainThread == MAIN_THREAD){
-      //printf("nm putevent to m\n");
+    if(!NS_IsMainThread() && mIsMainThread == MAIN_THREAD){
+      //printf("nm putevent to m %ld,%ld\n",get_counter(),currentThread->expTime);
+      printf("d %ld,%ld\n",get_counter(),currentThread->expTime);
       //If the event is created by main thread,
       //it should releases the current lock or
       //replaces its flag in queue or
       //simply be pushed into queue(if its flag has been already pop)
 
-      if(currentThread->expTime > 1e3){
+      if(currentThread->expTime > get_counter()){
         temExpTime = currentThread->expTime + currentThread->add;
 
         //If main thread is locked and the expTime of flag equals to event's expTime
         if(getFlag() && flagExpTime == temExpTime){
           //printf("release\n");
+          //if(threadName)printf("%s\n",threadName);
           flagEvent = event.get();
+          //printf("event %s\n",typeid(flagEvent).name());
           put = false;
           setFlag(false);
         }
@@ -732,25 +787,29 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
       else{
         struct timeval tp;
         gettimeofday(&tp, NULL);
-        temExpTime = tp.tv_sec * 1000 + tp.tv_usec / 1000 - getPhysicalBase();
-        //temExpTime = get_counter();
+        //temExpTime = (tp.tv_sec * 1000 + tp.tv_usec / 1000 - getPhysicalBase()) * 100;
+        //printf("get present: %ld\n", temExpTime);
+        temExpTime = get_counter();
       }
     }
     //main thread push event to itself
-    else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread == MAIN_THREAD){
-      //printf("m putevent to m\n");
+    else if(NS_IsMainThread() && mIsMainThread == MAIN_THREAD){
+      printf("dd %ld,%ld\n",get_counter(),currentThread->expTime);
+      //printf("m putevent to m %ld\n",get_counter());
       temExpTime = get_counter() + defaultExpTime;
     }
     // If main thread create an event and push to an non main thread, the event's expTime is created and passed to target thread
-    else if(currentThread->mIsMainThread == MAIN_THREAD && mIsMainThread != MAIN_THREAD){
-      //printf("m putevent to nm\n");
+    else if(NS_IsMainThread() && mIsMainThread != MAIN_THREAD){
+      printf("ddd %ld,%ld\n",get_counter(),currentThread->expTime);
+      //printf("m putevent to nm %ld\n",get_counter());
       //if(mName != NULL)printf("out:%s\n",mName);
       temExpTime = get_counter() + defaultExpTime;
-      currentThread->putFlag(temExpTime);
+      mainThread->putFlag(temExpTime);
     }
     //Non main thread push event to non main thread, just pass the expTime
     else{
-      //printf("nm putevent to nm\n");
+      printf("dddd %ld,%ld\n",get_counter(),currentThread->expTime);
+      //printf("nm putevent to nm %ld\n",get_counter());
       temExpTime = currentThread->expTime;
     }
 
@@ -780,6 +839,72 @@ void nsThread::putFlag(uint64_t expTime){
   //printf("put flag:%ld\n", expTime);
   mEventsRoot.PutEvent(flagEvent, lock, expTime, true);
 }
+
+
+nsresult
+nsThread::DispatchInternal(already_AddRefed<nsIRunnable> aEvent, uint32_t aFlags,
+                           nsNestedEventTarget* aTarget, uint64_t exptime)
+{
+  // We want to leak the reference when we fail to dispatch it, so that
+  // we won't release the event in a wrong thread.
+  LeakRefPtr<nsIRunnable> event(Move(aEvent));
+  if (NS_WARN_IF(!event)) {
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  if (gXPCOMThreadsShutDown && MAIN_THREAD != mIsMainThread && !aTarget) {
+    NS_ASSERTION(false, "Failed Dispatch after xpcom-shutdown-threads");
+    return NS_ERROR_ILLEGAL_DURING_SHUTDOWN;
+  }
+
+#ifdef MOZ_TASK_TRACER
+  nsCOMPtr<nsIRunnable> tracedRunnable = CreateTracedRunnable(event.take());
+  (static_cast<TracedRunnable*>(tracedRunnable.get()))->DispatchTask();
+  // XXX tracedRunnable will always leaked when we fail to disptch.
+  event = tracedRunnable.forget();
+#endif
+
+  if (aFlags & DISPATCH_SYNC) {
+    nsThread* thread = nsThreadManager::get().GetCurrentThread();
+    if (NS_WARN_IF(!thread)) {
+      return NS_ERROR_NOT_AVAILABLE;
+    }
+
+    // XXX we should be able to do something better here... we should
+    //     be able to monitor the slot occupied by this event and use
+    //     that to tell us when the event has been processed.
+
+    RefPtr<nsThreadSyncDispatch> wrapper =
+      new nsThreadSyncDispatch(thread, event.take());
+    nsresult rv = PutEvent(wrapper, aTarget); // hold a ref
+    // Don't wait for the event to finish if we didn't dispatch it...
+    if (NS_FAILED(rv)) {
+      // PutEvent leaked the wrapper runnable object on failure, so we
+      // explicitly release this object once for that. Note that this
+      // object will be released again soon because it exits the scope.
+      wrapper.get()->Release();
+      return rv;
+    }
+
+    // Allows waiting; ensure no locks are held that would deadlock us!
+    while (wrapper->IsPending()) {
+      NS_ProcessNextEvent(thread, true);
+    }
+    return NS_OK;
+  }
+
+  NS_ASSERTION(aFlags == NS_DISPATCH_NORMAL, "unexpected dispatch flags");
+  return PutEvent(event.take(), aTarget, exptime);
+}
+
+NS_IMETHODIMP
+nsThread::Dispatch(already_AddRefed<nsIRunnable> aEvent, uint32_t aFlags, uint64_t expTime)
+{
+  LOG(("THRD(%p) Dispatch [%p %x]\n", this, /* XXX aEvent */nullptr, aFlags));
+
+  return DispatchInternal(Move(aEvent), aFlags, nullptr, expTime);
+}
+
 //SECLAB END
 
 nsresult
@@ -1162,14 +1287,18 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
 
         struct timeval tp;
         gettimeofday(&tp, NULL);
-        uint64_t physical_time = tp.tv_sec * 1000 + tp.tv_usec / 1000;
-        physical_time -= getPhysicalBase();
+        uint64_t physical_time = tp.tv_sec * 1000 + tp.tv_usec / 1000 - getPhysicalBase();
+        physical_time *= 100;
         /*while(physical_time < get_counter()){
           gettimeofday(&tp, NULL);
           physical_time = tp.tv_sec * 1000 + tp.tv_usec / 1000;
           physical_time -= getPhysicalBase();
+          physical_time *= 100;
         }*/
-        //if(physical_time < get_counter())set_counter(physical_time);
+        if(physical_time < get_counter()){
+          //printf("slow: %ld, %ld\n", get_counter(), physical_time);
+          //set_counter(physical_time);
+        }
         //printf("main run\n");
 
         //printf("main nextevent, %d\n",*temExpTime);
@@ -1184,7 +1313,7 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
           bool isBreak = false;
           while(temFlag){
             temFlag = getFlag();
-            if(i++ > 1e4){
+            if(i++ > 1e6){
               isBreak = true;
               flagEvent = NULL;
               setFlag(false);
@@ -1193,17 +1322,21 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
 
           if(!isBreak){
             //reset the counter before run the event
-            set_counter(*temExpTime);
+            //set_counter(*temExpTime);
             event = flagEvent;
             flagEvent = NULL;
           }
         }
         else if(*temExpTime > get_counter()){
-          set_counter(*temExpTime);
+          //set_counter(*temExpTime);
         }
+      }
+      if (MAIN_THREAD == mIsMainThread){
+        //printf("main execute %ld\n",get_counter());
       }
       //non main thread just pass the expTime
       if (MAIN_THREAD != mIsMainThread){
+        //printf("non main execute %ld\n",get_counter());
         if(*temExpTime != 0){
           if(this->expTime == 0 || this->expTime != *temExpTime){
             this->expTime = *temExpTime;
