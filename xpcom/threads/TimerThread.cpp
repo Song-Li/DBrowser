@@ -569,6 +569,10 @@ TimerThread::Run()
 nsresult
 TimerThread::AddTimer(nsTimerImpl* aTimer)
 {
+  //SECLAB
+  expTime = get_counter() + 100;
+  //SECLAB
+
   MonitorAutoLock lock(mMonitor);
 
   // Add the timer to our list.
@@ -738,6 +742,11 @@ TimerThread::PostTimerEvent(already_AddRefed<nsTimerImpl> aTimerRef)
     // We release mMonitor around the Dispatch because if this timer is targeted
     // at the TimerThread we'll deadlock.
     MonitorAutoUnlock unlock(mMonitor);
+
+    //SECLAB
+    target->targetExpTime = this->expTime;
+    //SECLAB
+
     rv = target->Dispatch(event, NS_DISPATCH_NORMAL);
   }
 

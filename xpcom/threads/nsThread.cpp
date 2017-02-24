@@ -685,6 +685,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
   //printf("%ld\n",MessageLoop::current());
   // We want to leak the reference when we fail to dispatch it, so that
   // we won't release the event in a wrong thread.
+  printf("call new function %d, %d\n",get_counter(), expTime);
   LeakRefPtr<nsIRunnable> event(Move(aEvent));
   nsCOMPtr<nsIThreadObserver> obs;
 
@@ -758,7 +759,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     //Non main thread push event into main thread
     if(!NS_IsMainThread() && mIsMainThread == MAIN_THREAD){
       //printf("nm putevent to m %ld,%ld\n",get_counter(),currentThread->expTime);
-      printf("d %ld,%ld\n",get_counter(),currentThread->expTime);
+      //printf("d %ld,%ld\n",get_counter(),currentThread->expTime);
       //If the event is created by main thread,
       //it should releases the current lock or
       //replaces its flag in queue or
@@ -794,21 +795,20 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     }
     //main thread push event to itself
     else if(NS_IsMainThread() && mIsMainThread == MAIN_THREAD){
-      printf("dd %ld,%ld\n",get_counter(),currentThread->expTime);
+      //printf("dd %ld,%ld\n",get_counter(),currentThread->expTime);
       //printf("m putevent to m %ld\n",get_counter());
-      temExpTime = get_counter() + defaultExpTime;
+      temExpTime = get_counter();
     }
     // If main thread create an event and push to an non main thread, the event's expTime is created and passed to target thread
     else if(NS_IsMainThread() && mIsMainThread != MAIN_THREAD){
-      printf("ddd %ld,%ld\n",get_counter(),currentThread->expTime);
+      //printf("ddd %ld,%ld\n",get_counter(),currentThread->expTime);
       //printf("m putevent to nm %ld\n",get_counter());
       //if(mName != NULL)printf("out:%s\n",mName);
-      temExpTime = get_counter() + defaultExpTime;
-      mainThread->putFlag(temExpTime);
+      temExpTime = get_counter();
     }
     //Non main thread push event to non main thread, just pass the expTime
     else{
-      printf("dddd %ld,%ld\n",get_counter(),currentThread->expTime);
+      //printf("dddd %ld,%ld\n",get_counter(),currentThread->expTime);
       //printf("nm putevent to nm %ld\n",get_counter());
       temExpTime = currentThread->expTime;
     }
@@ -977,6 +977,14 @@ NS_IMETHODIMP
 nsThread::Dispatch(already_AddRefed<nsIRunnable> aEvent, uint32_t aFlags)
 {
   LOG(("THRD(%p) Dispatch [%p %x]\n", this, /* XXX aEvent */nullptr, aFlags));
+
+  //SECLAB
+  if(targetExpTime > 0){
+    uint64_t temTime = targetExpTime;
+    targetExpTime = 0;
+    return DispatchInternal(Move(aEvent), aFlags, nullptr, temTime);
+  }
+  //SECLAB
 
   return DispatchInternal(Move(aEvent), aFlags, nullptr);
 }
@@ -1284,6 +1292,10 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
       bool run = true;
 
       if (MAIN_THREAD == mIsMainThread) {
+        if(*temExpTime > get_counter()){
+          printf("set counter %d, %d\n", get_counter(), *temExpTime);
+          set_counter(*temExpTime);
+        }
 
         struct timeval tp;
         gettimeofday(&tp, NULL);

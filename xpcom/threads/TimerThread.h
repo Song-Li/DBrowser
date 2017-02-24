@@ -79,6 +79,10 @@ private:
   bool mSleeping;
 
   nsTArray<nsTimerImpl*> mTimers;
+
+  //SECLAB
+  uint64_t expTime;
+  //SECLAB
 };
 
 struct TimerAdditionComparator
@@ -108,6 +112,7 @@ struct TimerAdditionComparator
 
 private:
   const mozilla::TimeStamp& now;
+
 #ifdef DEBUG
   const nsTimerImpl* const timerToInsert;
 #endif
