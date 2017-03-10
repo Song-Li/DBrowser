@@ -16,6 +16,7 @@
 
 extern volatile uint64_t counter;
 extern volatile uint64_t physical_base;
+extern bool isSystem;
 
 void inc_counter(uint64_t args, JSContext* cx=NULL);
 uint64_t get_counter(void);

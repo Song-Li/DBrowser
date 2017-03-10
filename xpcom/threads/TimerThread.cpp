@@ -570,7 +570,18 @@ nsresult
 TimerThread::AddTimer(nsTimerImpl* aTimer)
 {
   //SECLAB
-  expTime = get_counter() + 100;
+  //printf("dddd:%ld\n",NS_GetCurrentThread());
+  nsIThread* mainThread;
+  NS_GetMainThread(&mainThread);
+  if(NS_GetCurrentThread() == mainThread && !isSystem){
+    this->expTime = get_counter() + 100;
+    printf("set expTime %d,%d,%d, %d\n", expTime, aTimer->mDelay,aTimer->mType,aTimer->mGeneration);
+  }
+  else{
+    //printf("set expTime");
+    //this->expTime = 0;
+  }
+  isSystem = true;
   //SECLAB
 
   MonitorAutoLock lock(mMonitor);
@@ -745,6 +756,7 @@ TimerThread::PostTimerEvent(already_AddRefed<nsTimerImpl> aTimerRef)
 
     //SECLAB
     target->targetExpTime = this->expTime;
+    this->expTime = 0;
     //SECLAB
 
     rv = target->Dispatch(event, NS_DISPATCH_NORMAL);

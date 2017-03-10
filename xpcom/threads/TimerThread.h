@@ -55,6 +55,11 @@ public:
     return mThread == NS_GetCurrentThread();
   }
 
+
+  //SECLAB
+  uint64_t expTime;
+  //SECLAB
+
 private:
   ~TimerThread();
 
@@ -79,10 +84,6 @@ private:
   bool mSleeping;
 
   nsTArray<nsTimerImpl*> mTimers;
-
-  //SECLAB
-  uint64_t expTime;
-  //SECLAB
 };
 
 struct TimerAdditionComparator

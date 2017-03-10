@@ -28,6 +28,10 @@ using namespace mozilla::tasktracer;
 #include <unistd.h>
 #endif
 
+//SECLAB BEGIN 10/03/2016
+#include "../../js/src/vm/Counter.h"
+//SECLAB END
+
 using mozilla::Atomic;
 using mozilla::LogLevel;
 using mozilla::TimeDuration;

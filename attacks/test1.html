@@ -12,9 +12,9 @@ setTimeout(myFunction1, 1000);
 var i = 1;
 
 function myFunction1() {
-    document.getElementById("demo").innerHTML = i++;
     var end = performance.now();
     document.getElementById("time").innerHTML = end - start;
+    document.getElementById("demo").innerHTML = i++;
     start = end;
     setTimeout(myFunction1, 1000);
 }
