@@ -1398,6 +1398,7 @@ nsScriptLoader::CreateLoadRequest(nsScriptKind aKind,
 bool
 nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
 {
+
   // We need a document to evaluate scripts.
   NS_ENSURE_TRUE(mDocument, false);
 
@@ -1448,6 +1449,7 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
   // Step 14. in the HTML5 spec
   nsresult rv = NS_OK;
   RefPtr<nsScriptLoadRequest> request;
+
   if (aElement->GetScriptExternal()) {
     // external script
     nsCOMPtr<nsIURI> scriptURI = aElement->GetScriptURI();
@@ -1527,6 +1529,10 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
       }
     }
 
+    //SECLAB
+    printf("kkkkkk\n");
+    //SECLAB
+
     // Should still be in loading stage of script.
     NS_ASSERTION(!request->InCompilingStage(),
                  "Request should not yet be in compiling stage.");
@@ -1548,6 +1554,9 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
       }
       return false;
     }
+
+    printf("mmmm\n");
+
     if (!aElement->GetParserCreated() && !request->IsModuleRequest()) {
       // Violate the HTML5 spec in order to make LABjs and the "order" plug-in
       // for RequireJS work with their Gecko-sniffed code path. See
@@ -1561,6 +1570,7 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
       }
       return false;
     }
+
     // we now have a parser-inserted request that may or may not be still
     // loading
     if (aElement->GetScriptDeferred() || request->IsModuleRequest()) {
@@ -1620,6 +1630,8 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
     return true;
   }
 
+  printf("ggggggg\n");
+
   // inline script
   // Is this document sandboxed without 'allow-scripts'?
   if (mDocument->HasScriptsBlockedBySandbox()) {
@@ -1677,6 +1689,7 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
         "Parser-blocking scripts and XSLT scripts in the same doc!");
     return true;
   }
+
   // We now have a document.written inline script or we have an inline script
   // from the network but there is no style sheet that is blocking scripts.
   // Don't check for style sheets blocking scripts in the document.write
@@ -1788,6 +1801,11 @@ OffThreadScriptLoaderCallback(void *aToken, void *aCallbackData)
   RefPtr<NotifyOffThreadScriptLoadCompletedRunnable> aRunnable =
     dont_AddRef(static_cast<NotifyOffThreadScriptLoadCompletedRunnable*>(aCallbackData));
   aRunnable->SetToken(aToken);
+
+  //SECLAB
+  printf("ppppp\n");
+  //SECLAB
+
   NS_DispatchToMainThread(aRunnable);
 }
 

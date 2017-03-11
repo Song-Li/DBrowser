@@ -22,6 +22,7 @@
 
 //SECLAB BEGIN 10/03/2016
 #include "../../js/src/vm/Counter.h"
+#include "nsThread.h"
 //SECLAB END
 
 using namespace mozilla;
@@ -571,10 +572,11 @@ TimerThread::AddTimer(nsTimerImpl* aTimer)
 {
   //SECLAB
   //printf("dddd:%ld\n",NS_GetCurrentThread());
-  nsIThread* mainThread;
-  NS_GetMainThread(&mainThread);
+  nsThread* mainThread;
+  NS_GetMainThread((nsIThread**)(&mainThread));
   if(NS_GetCurrentThread() == mainThread && !isSystem){
     this->expTime = get_counter() + 100;
+    mainThread->putFlag(this->expTime);
     printf("set expTime %d,%d,%d, %d\n", expTime, aTimer->mDelay,aTimer->mType,aTimer->mGeneration);
   }
   else{

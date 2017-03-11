@@ -58,6 +58,7 @@ public:
     return mIsMain;
   }
   bool setIsMain(bool aIsMain) {
+    if(aIsMain)printf("isMain\n");
     return mIsMain = aIsMain;
   }
   //SECLAB Sat 22 Oct 2016 03:06:43 PM EDT END
@@ -168,7 +169,8 @@ private:
       }
     }
 
-    if(mHead != head || mOffsetHead != offset) {
+    if(offset < EVENTS_PER_PAGE && (mHead != head || mOffsetHead != offset)) {
+
       nsIRunnable* tmp = mHead->mEvents[mOffsetHead];
       mHead->mEvents[mOffsetHead] = nextRun->mEvents[offset];
       nextRun->mEvents[offset] = tmp;

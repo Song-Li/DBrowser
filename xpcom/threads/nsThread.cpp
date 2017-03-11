@@ -611,7 +611,7 @@ nsThread::nsThread(MainThreadFlag aMainThread, uint32_t aStackSize)
   , mName(PR_GetThreadName(PR_GetCurrentThread()))
 {
   /*Only main thread uses priority queue*/
-  //mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
+  mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
 }
 
 nsThread::~nsThread()
@@ -862,7 +862,7 @@ void nsThread::putFlag(uint64_t expTime){
   if( mIsMainThread != MAIN_THREAD )return;
   MutexAutoLock lock(mLock);
   nsIRunnable* flagEvent = new Runnable();
-  //printf("put flag:%ld\n", expTime);
+  printf("put flag:%ld\n", expTime);
   mEventsRoot.PutEvent(flagEvent, lock, expTime, true);
 }
 
