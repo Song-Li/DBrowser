@@ -571,17 +571,12 @@ nsresult
 TimerThread::AddTimer(nsTimerImpl* aTimer)
 {
   //SECLAB
-  //printf("dddd:%ld\n",NS_GetCurrentThread());
   nsThread* mainThread;
   NS_GetMainThread((nsIThread**)(&mainThread));
   if(NS_GetCurrentThread() == mainThread && !isSystem){
     this->expTime = get_counter() + 100;
     mainThread->putFlag(this->expTime);
-    printf("set expTime %d,%d,%d, %d\n", expTime, aTimer->mDelay,aTimer->mType,aTimer->mGeneration);
-  }
-  else{
-    //printf("set expTime");
-    //this->expTime = 0;
+    //printf("set expTime %d,%d,%d, %d\n", expTime, aTimer->mDelay,aTimer->mType,aTimer->mGeneration);
   }
   isSystem = true;
   //SECLAB

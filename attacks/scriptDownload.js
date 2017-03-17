@@ -1,6 +1,6 @@
 var res_array = [];
 var count = {};
-var payload = 1e2; 
+var payload = 100; 
 var cur = 0;
 var pre_start = 0;
 var ran = 0;

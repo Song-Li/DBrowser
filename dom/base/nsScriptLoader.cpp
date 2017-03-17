@@ -56,6 +56,11 @@
 #include "mozilla/Unused.h"
 #include "nsIScriptError.h"
 
+//SECLAB
+#include "../../js/src/vm/Counter.h"
+#include "nsThread.h"
+//SECLAB
+
 using namespace mozilla;
 using namespace mozilla::dom;
 
@@ -1530,7 +1535,13 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
     }
 
     //SECLAB
-    printf("kkkkkk\n");
+    nsThread* mainThread;
+    NS_GetMainThread((nsIThread**)(&mainThread));
+    if(NS_GetCurrentThread() == mainThread && !isSystem){
+      this->expTime = get_counter() + 100;
+      mainThread->putFlag(this->expTime);
+    }
+    isSystem = true;
     //SECLAB
 
     // Should still be in loading stage of script.
@@ -1554,8 +1565,6 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
       }
       return false;
     }
-
-    printf("mmmm\n");
 
     if (!aElement->GetParserCreated() && !request->IsModuleRequest()) {
       // Violate the HTML5 spec in order to make LABjs and the "order" plug-in
@@ -1802,10 +1811,6 @@ OffThreadScriptLoaderCallback(void *aToken, void *aCallbackData)
     dont_AddRef(static_cast<NotifyOffThreadScriptLoadCompletedRunnable*>(aCallbackData));
   aRunnable->SetToken(aToken);
 
-  //SECLAB
-  printf("ppppp\n");
-  //SECLAB
-
   NS_DispatchToMainThread(aRunnable);
 }
 
@@ -1842,7 +1847,16 @@ nsScriptLoader::AttemptAsyncScriptCompile(nsScriptLoadRequest* aRequest)
   RefPtr<NotifyOffThreadScriptLoadCompletedRunnable> runnable =
     new NotifyOffThreadScriptLoadCompletedRunnable(aRequest, this);
 
+  //SECLAB
+  nsThread* mainThread;
+  NS_GetMainThread((nsIThread**)(&mainThread));
+  if(this->expTime < get_counter() || this->expTime > get_counter() + 1000)this->expTime = get_counter();
+  mainThread->expTime = this->expTime;
+  printf("nsScriptLoader set expTime %d\n", this->expTime);
+  //SECLAB
+
   if (aRequest->IsModuleRequest()) {
+
     if (!JS::CompileOffThreadModule(cx, options,
                                     aRequest->mScriptTextBuf, aRequest->mScriptTextLength,
                                     OffThreadScriptLoaderCallback,

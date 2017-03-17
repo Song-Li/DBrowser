@@ -92,7 +92,6 @@ uint64_t getJSThread(){
 }
 
 void inc_counter(uint64_t args, JSContext* cx) {
-    //printf("JS thread : %ld\n",pthread_self());
     if(physical_base == 0){
       struct timeval tp;
       gettimeofday(&tp, NULL);
@@ -119,10 +118,8 @@ uint64_t get_counter(void) {
 }
 
 bool set_counter(uint64_t time) {
-    if(time > 2*get_counter())return false;
-    //printf("set counter: %ld\n",counter);
+    if(time < get_counter())return false;
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
-    //printf("set %ld %ld\n",time,get_counter());
     //if (defaultCx!=NULL)mapCounter[defaultCx] = time;
     counter=time;
     return true;
@@ -1853,9 +1850,9 @@ Interpret(JSContext* cx, RunState& state)
     JS_BEGIN_MACRO                                                            \
           const char * filename = script->filename();                         \
           isSystem = true;                                                    \
-          if (strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL || strstr(filename, "self-hosted") != NULL )                                     \
-            isSystem = true;                                                  \
-          else                                                                \
+          /*if (strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL || strstr(filename, "self-hosted") != NULL )  */                                   \
+          isSystem = true;                                                  \
+          if (strstr(filename, "http://")!=NULL || strstr(filename, "https://")!=NULL)                                                                \
             isSystem = false;                                                 \
         if (!script->hasScriptCounts()) {                                     \
             if (cx->compartment()->collectCoverageForDebug()) {               \
