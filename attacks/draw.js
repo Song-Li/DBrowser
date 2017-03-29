@@ -6,7 +6,7 @@ function drawBasic() {
   data.addColumn('number', 'X');
   data.addColumn('number', 'Dogs');
 
-  array = doJob();
+  //array = doJob();
   data.addRows(array);
 
   var options = {

@@ -81,7 +81,9 @@ bool isSystem = true;
 
 bool stop = false;
 
-bool set_flag = true;
+bool set_flag = false;
+
+bool inc_flag = true;
 
 int isNow = 0;
 
@@ -92,6 +94,7 @@ uint64_t getJSThread(){
 }
 
 void inc_counter(uint64_t args, JSContext* cx) {
+    if(!inc_flag)return;
     if(physical_base == 0){
       struct timeval tp;
       gettimeofday(&tp, NULL);
@@ -108,6 +111,10 @@ void inc_counter(uint64_t args, JSContext* cx) {
     JS_COUNTER_LOG("counter %i inc %i", counter, c);
 }
 
+void dea_counter(uint64_t args){
+    counter -= args;
+}
+
 uint64_t get_counter(void) {
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, counter);
     //printf("counter get:%i\n", counter);
@@ -121,6 +128,8 @@ bool set_counter(uint64_t time) {
     if(time < get_counter())return false;
     JS_COUNTER_LOG("counter : %i", __FUNCTION__, time);
     //if (defaultCx!=NULL)mapCounter[defaultCx] = time;
+    //if(time < get_counter())set_flag = false;
+    if(!inc_flag)inc_flag=true;
     counter=time;
     return true;
 }
@@ -541,7 +550,6 @@ js::RunScript(JSContext* cx, RunState& state)
     }
 
     /*SECLAB*/
-   // if (get_counter()<100000)
    // printf("Inter Interpret part    Counter: %d CX: %x thread: %lx\n", get_counter(), cx, pthread_self());
 
     jsbytecode* pc;
@@ -1807,7 +1815,8 @@ Interpret(JSContext* cx, RunState& state)
 //SECLAB BEGIN 10/21/2016
 #define ADVANCE_AND_DISPATCH(N)                                               \
     JS_BEGIN_MACRO                                                            \
-        inc_counter(1);                                                     \
+        const char * filename = script->filename();\
+        if(strstr(filename,"http:") != NULL || strstr(filename,"https:") != NULL)inc_counter(1);\
         REGS.pc += (N);                                                       \
         /*inc_counter(1,cx);  */                                                       \
         SANITY_CHECKS();                                                      \
@@ -1850,10 +1859,18 @@ Interpret(JSContext* cx, RunState& state)
     JS_BEGIN_MACRO                                                            \
           const char * filename = script->filename();                         \
           isSystem = true;                                                    \
-          /*if (strstr(filename, "chrome://")!=NULL || strstr(filename, "resource://")!=NULL || strstr(filename, "self-hosted") != NULL )  */                                   \
-          isSystem = true;                                                  \
-          if (strstr(filename, "http://")!=NULL || strstr(filename, "https://")!=NULL)                                                                \
-            isSystem = false;                                                 \
+          if(script->scriptSource()->hasSourceData()){\
+            JSString* srcJS= script->sourceData(cx);\
+            if(srcJS){\
+              char* code = JS_EncodeString(cx,srcJS);\
+              if(strstr(code, "Looks like we have been called off a timeout")!=NULL){\
+                printf("decrease\n");\
+                inc_flag = false;\
+              }\
+            }\
+          }\
+          if (strstr(filename, "http://")!=NULL || strstr(filename, "https://")!=NULL){\
+            isSystem = false;}                                                \
         if (!script->hasScriptCounts()) {                                     \
             if (cx->compartment()->collectCoverageForDebug()) {               \
                 if (!script->initScriptCounts(cx))                            \

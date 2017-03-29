@@ -339,3 +339,4 @@ def nsis_binary_type(nsis):
 # Fallthrough to autoconf-based configure
 include('build/moz.configure/old.configure')
 # Please do not add anything after the include of old.configure.
+

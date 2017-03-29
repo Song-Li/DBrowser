@@ -1538,7 +1538,7 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
     nsThread* mainThread;
     NS_GetMainThread((nsIThread**)(&mainThread));
     if(NS_GetCurrentThread() == mainThread && !isSystem){
-      this->expTime = get_counter() + 100;
+      this->expTime = get_counter() + 1000;
       mainThread->putFlag(this->expTime);
     }
     isSystem = true;
@@ -1638,8 +1638,6 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
     mParserBlockingRequest = request;
     return true;
   }
-
-  printf("ggggggg\n");
 
   // inline script
   // Is this document sandboxed without 'allow-scripts'?
@@ -1850,9 +1848,9 @@ nsScriptLoader::AttemptAsyncScriptCompile(nsScriptLoadRequest* aRequest)
   //SECLAB
   nsThread* mainThread;
   NS_GetMainThread((nsIThread**)(&mainThread));
-  if(this->expTime < get_counter() || this->expTime > get_counter() + 1000)this->expTime = get_counter();
+  if(this->expTime < 0 || this->expTime > get_counter() + 1000)this->expTime = get_counter();
   mainThread->expTime = this->expTime;
-  printf("nsScriptLoader set expTime %d\n", this->expTime);
+  printf("nsScriptLoader set expTime %d, %d\n", this->expTime, get_counter());
   //SECLAB
 
   if (aRequest->IsModuleRequest()) {

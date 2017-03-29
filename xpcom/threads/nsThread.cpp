@@ -686,7 +686,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
   //MessageLoop* ml = MessageLoop::current();
   // We want to leak the reference when we fail to dispatch it, so that
   // we won't release the event in a wrong thread.
-  if(expTime < get_counter() || expTime - get_counter() > 1000)expTime = get_counter();
+  if(expTime < 0 || expTime - get_counter() > 1000)expTime = get_counter();
   LeakRefPtr<nsIRunnable> event(Move(aEvent));
   nsCOMPtr<nsIThreadObserver> obs;
 
@@ -704,8 +704,6 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     nsThread* mainThread = ((nsThread*) thread);
     nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
     bool put = true;
-
-    if(expTime < get_counter())expTime = get_counter();
 
     //Non main thread push event into main thread
     if(!NS_IsMainThread() && mIsMainThread == MAIN_THREAD){
@@ -836,7 +834,7 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
 
 //SECLAB BEGIN 10/22/2016
 void nsThread::putFlag(uint64_t expTime){
-  if(mIsMainThread != MAIN_THREAD || expTime < get_counter() || expTime - get_counter() > 1000)return;
+  if(mIsMainThread != MAIN_THREAD || expTime < 0 || expTime - get_counter() > 1000)return;
   MutexAutoLock lock(mLock);
   nsIRunnable* flagEvent = new Runnable();
   this->mEventsRoot.PutEvent(flagEvent, lock, expTime, true);
@@ -1303,7 +1301,7 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
           gettimeofday(&tp, NULL);
           physical_time = tp.tv_sec * 1000 + tp.tv_usec / 1000;
           physical_time -= getPhysicalBase();
-          physical_time *= 1500;
+          physical_time *= 1000;
           //printf("slow: %ld, %ld\n", get_counter(), physical_time);
         }while(physical_time > 1e7 && physical_time < get_counter());
 
@@ -1336,7 +1334,7 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
           }
         }
         else{
-          if(*temExpTime > get_counter())set_counter(*temExpTime);
+          set_counter(*temExpTime);
         }
       }
 

@@ -1,6 +1,6 @@
 var res_array = [];
 var count = {};
-var payload = 100; 
+var payload = 105; 
 var cur = 0;
 var pre_start = 0;
 var ran = 0;
@@ -8,14 +8,16 @@ var avg = [];
 
 function run(file_name) {
   var element_s = document.createElement('script');
-  start = performance.now();
+  //document.getElementById("extra").innerHTML += start + ',';
   document.body.appendChild(element_s);
   element_s.src = file_name;
+  start = performance.now();
   window.onerror = function(e) {
     cur ++;
     var end = performance.now();
     var res = end - start;
-    console.log(start, end);
+    console.log(start, end, end-start);
+    //document.getElementById("extra").innerHTML += start + ',' + end + ',' + res + '<br>';
     if(addToRes(res)) run(file_name);
   }
 
@@ -23,11 +25,11 @@ function run(file_name) {
 
 
 function addToRes(during) {
-  res_array.push([cur, during]); 
-  if(count[during] === undefined) {
-    count[during] = 0;
+  if(cur > 4 && cur < payload){
+    res_array.push([cur-4, during]); 
+    if(count[during] === undefined)count[during] = 0;
+    count[during] += 1;
   }
-  count[during] += 1;
   if(cur >= payload) {
     get_res();
     document.getElementById("info").innerHTML = "We have " + Object.keys(count).length + " different times<br>";
@@ -52,7 +54,7 @@ function get_res() {
 }
 
 function doJob() {
-  for(var i = 1;i < 2;++ i) {
+  for(var i = 1;i < 2; i++) {
     var average = run(i.toString() + "e5.js");
     res_array = [];
     avg.push([i, average]);
