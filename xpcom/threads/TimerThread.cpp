@@ -576,7 +576,7 @@ TimerThread::AddTimer(nsTimerImpl* aTimer)
   if(NS_GetCurrentThread() == mainThread && !isSystem){
     this->expTime = get_counter() + 100;
     mainThread->putFlag(this->expTime);
-    //printf("set expTime %d,%d,%d, %d\n", expTime, aTimer->mDelay,aTimer->mType,aTimer->mGeneration);
+    printf("set expTime %d,%d,%d, %d\n", expTime, aTimer->mDelay,aTimer->mType,aTimer->mGeneration);
   }
   isSystem = true;
   //SECLAB
@@ -753,6 +753,7 @@ TimerThread::PostTimerEvent(already_AddRefed<nsTimerImpl> aTimerRef)
 
     //SECLAB
     target->targetExpTime = this->expTime;
+    //printf("set counter %d\n", target->targetExpTime);
     this->expTime = 0;
     //SECLAB
 

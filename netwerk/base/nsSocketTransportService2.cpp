@@ -246,7 +246,7 @@ nsSocketTransportService::DetachSocket(SocketContext *listHead, SocketContext *s
         RemoveFromIdleList(sock);
 
     // NOTE: sock is now an invalid pointer
-    
+
     //
     // notify the first element on the pending socket queue...
     //
@@ -278,7 +278,7 @@ nsSocketTransportService::AddToPollList(SocketContext *sock)
             return NS_ERROR_OUT_OF_MEMORY;
         }
     }
-    
+
     uint32_t newSocketIndex = mActiveCount;
     if (ChaosMode::isActive(ChaosFeature::NetworkScheduling)) {
       newSocketIndex = ChaosMode::randomUint32LessThan(mActiveCount + 1);
@@ -441,6 +441,7 @@ int32_t
 nsSocketTransportService::Poll(uint32_t *interval,
                                TimeDuration *pollDuration)
 {
+    printf("nsSocketTransportService::Poll %d\n", NS_IsMainThread());
     PRPollDesc *pollList;
     uint32_t pollCount;
     PRIntervalTime pollTimeout;
@@ -486,7 +487,7 @@ nsSocketTransportService::Poll(uint32_t *interval,
     }
 
     SOCKET_LOG(("    ...returned after %i milliseconds\n",
-         PR_IntervalToMilliseconds(passedInterval))); 
+         PR_IntervalToMilliseconds(passedInterval)));
 
     *interval = PR_IntervalToSeconds(passedInterval);
     return rv;
@@ -522,7 +523,7 @@ nsSocketTransportService::Init()
     nsCOMPtr<nsIThread> thread;
     nsresult rv = NS_NewNamedThread("Socket Thread", getter_AddRefs(thread), this);
     if (NS_FAILED(rv)) return rv;
-    
+
     {
         MutexAutoLock lock(mLock);
         // Install our mThread, protecting against concurrent readers
@@ -589,7 +590,7 @@ nsSocketTransportService::Shutdown()
     }
 
     nsCOMPtr<nsIPrefBranch> tmpPrefService = do_GetService(NS_PREFSERVICE_CONTRACTID);
-    if (tmpPrefService) 
+    if (tmpPrefService)
         tmpPrefService->RemoveObserver(SEND_BUFFER_PREF, this);
 
     nsCOMPtr<nsIObserverService> obsSvc = services::GetObserverService();
@@ -793,6 +794,7 @@ nsSocketTransportService::MarkTheLastElementOfPendingQueue()
 NS_IMETHODIMP
 nsSocketTransportService::Run()
 {
+    printf("nsSocketTransportService\n");
     SOCKET_LOG(("STS thread init %d sockets\n", gMaxCount));
 
     psm::InitializeSSLServerCertVerificationThreads();
@@ -1101,7 +1103,7 @@ nsSocketTransportService::DoPollIteration(TimeDuration *pollDuration)
                     s.mElapsedTime = UINT16_MAX;
                 else
                     s.mElapsedTime += uint16_t(pollInterval);
-                // check for timeout expiration 
+                // check for timeout expiration
                 if (s.mElapsedTime >= s.mHandler->mPollTimeout) {
                     s.mElapsedTime = 0;
                     s.mHandler->OnSocketReady(desc.fd, -1);
@@ -1406,7 +1408,7 @@ nsSocketTransportService::ProbeMaxCount()
     static_assert(SOCKET_LIMIT_MIN >= 32U, "Minimum Socket Limit is >= 32");
     while (gMaxCount <= numAllocated) {
         int32_t rv = PR_Poll(pfd, gMaxCount, PR_MillisecondsToInterval(0));
-        
+
         SOCKET_LOG(("Socket Limit Test poll() size=%d rv=%d\n",
                     gMaxCount, rv));
 

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<p>Click the button to create an IMG element.</p>
+
+<button onclick="myFunction()">Try it</button>
+
+<p id="demo"></p>
+
+<script>
+var start;
+function myFunction() {
+    var x = document.createElement("script");
+    x.src = "http://127.0.0.1:8080/9e5.js";
+    start = performance.now();
+    window.onerror = function(e){
+		var end = performance.now();
+                document.getElementById("demo").innerHTML = end - start;
+	};
+    document.body.appendChild(x);
+}
+</script>
+
+</body>
+</html>

@@ -27,6 +27,7 @@ namespace image {
 IDecodingTask::NotifyProgress(NotNull<RasterImage*> aImage,
                               NotNull<Decoder*> aDecoder)
 {
+
   MOZ_ASSERT(aDecoder->HasProgress() && !aDecoder->IsMetadataDecode());
 
   // Capture the decoder's state. If we need to notify asynchronously, it's

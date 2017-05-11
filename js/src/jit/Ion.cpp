@@ -2932,6 +2932,7 @@ jit::SetEnterJitData(JSContext* cx, EnterJitData& data, RunState& state,
 JitExecStatus
 jit::IonCannon(JSContext* cx, RunState& state)
 {
+
     IonScript* ion = state.script()->ionScript();
 
     EnterJitData data(cx);

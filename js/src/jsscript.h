@@ -29,6 +29,10 @@
 #include "vm/Shape.h"
 #include "vm/SharedImmutableStringsCache.h"
 
+//SECLAB
+#include "vm/Counter.h"
+//SECLAB
+
 namespace JS {
 struct ScriptSourceInfo;
 } // namespace JS
@@ -745,6 +749,10 @@ class JSScript : public js::gc::TenuredCell
                                    comment above Create() for details) */
 
     JSCompartment*  compartment_;
+
+    //SECLAB
+    uint32_t mCodeCount = 10;
+    //SECLAB
 
   private:
     /* Persistent type information retained across GCs. */

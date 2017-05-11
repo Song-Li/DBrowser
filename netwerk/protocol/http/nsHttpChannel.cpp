@@ -2866,7 +2866,7 @@ nsHttpChannel::IsResumable(int64_t partialLen, int64_t contentLength,
     bool hasContentEncoding =
         mCachedResponseHead->HasHeader(nsHttp::Content_Encoding);
 
-    nsAutoCString etag; 
+    nsAutoCString etag;
     mCachedResponseHead->GetHeader(nsHttp::ETag, etag);
     bool hasWeakEtag = !etag.IsEmpty() &&
                        StringBeginsWith(etag, NS_LITERAL_CSTRING("W/"));
@@ -5571,6 +5571,7 @@ nsHttpChannel::GetSecurityInfo(nsISupports **securityInfo)
 NS_IMETHODIMP
 nsHttpChannel::AsyncOpen(nsIStreamListener *listener, nsISupports *context)
 {
+    printf("start AsyncOpen\n");
     MOZ_ASSERT(!mLoadInfo ||
                mLoadInfo->GetSecurityMode() == 0 ||
                mLoadInfo->GetInitialSecurityCheckDone() ||
@@ -5673,15 +5674,18 @@ nsHttpChannel::AsyncOpen(nsIStreamListener *listener, nsISupports *context)
         AsyncAbort(rv);
     }
 
+    printf("end AsyncOpen\n");
     return NS_OK;
 }
 
 NS_IMETHODIMP
 nsHttpChannel::AsyncOpen2(nsIStreamListener *aListener)
 {
+  printf("begin http AsyncOpen2 %d\n", NS_IsMainThread());
   nsCOMPtr<nsIStreamListener> listener = aListener;
   nsresult rv = nsContentSecurityManager::doContentSecurityCheck(this, listener);
   NS_ENSURE_SUCCESS(rv, rv);
+  printf("finish http AsyncOpen2 %d\n", NS_IsMainThread());
   return AsyncOpen(listener, nullptr);
 }
 
@@ -5691,6 +5695,7 @@ nsHttpChannel::AsyncOpen2(nsIStreamListener *aListener)
 nsresult
 nsHttpChannel::BeginConnect()
 {
+    printf("BeginConnect() %d\n", NS_IsMainThread());
     LOG(("nsHttpChannel::BeginConnect [this=%p]\n", this));
     nsresult rv;
 
@@ -5803,6 +5808,8 @@ nsHttpChannel::BeginConnect()
         return rv;
     }
 
+    printf("BeginConnect 1 %d\n", NS_IsMainThread());
+
     // check to see if authorization headers should be included
     // mCustomAuthHeader is set in AsyncOpen if we find Authorization header
     mAuthProvider->AddAuthorizationHeaders(mCustomAuthHeader);
@@ -5848,6 +5855,8 @@ nsHttpChannel::BeginConnect()
             }
         }
     }
+
+    printf("BeginConnect 2 %d\n", NS_IsMainThread());
 
     // If mTimingEnabled flag is not set after OnModifyRequest() then
     // clear the already recorded AsyncOpen value for consistency.
@@ -5914,6 +5923,8 @@ nsHttpChannel::BeginConnect()
         mDNSPrefetch->PrefetchHigh(mCaps & NS_HTTP_REFRESH_DNS);
     }
 
+    printf("BeginConnect 3 %d\n", NS_IsMainThread());
+
     // Adjust mCaps according to our request headers:
     //  - If "Connection: close" is set as a request header, then do not bother
     //    trying to establish a keep-alive connection.
@@ -5946,9 +5957,13 @@ nsHttpChannel::BeginConnect()
         return mStatus;
     }
 
+    printf("BeginConnect 4 %d\n", NS_IsMainThread());
+
     if (!(mLoadFlags & LOAD_CLASSIFY_URI)) {
         return ContinueBeginConnectWithResult();
     }
+
+    printf("BeginConnect 5 %d\n", NS_IsMainThread());
 
     // mLocalBlocklist is true only if tracking protection is enabled and the
     // URI is a tracking domain, it makes no guarantees about phishing or
@@ -5965,6 +5980,8 @@ nsHttpChannel::BeginConnect()
         }
         callContinueBeginConnect = false;
     }
+
+    printf("BeginConnect 6 %d\n", NS_IsMainThread());
     // nsChannelClassifier calls ContinueBeginConnect if it has not already
     // been called, after optionally cancelling the channel once we have a
     // remote verdict. We call a concrete class instead of an nsI* that might
@@ -5975,6 +5992,8 @@ nsHttpChannel::BeginConnect()
     if (callContinueBeginConnect) {
         return ContinueBeginConnectWithResult();
     }
+
+    printf("BeginConnect finish %d\n", NS_IsMainThread());
     return NS_OK;
 }
 

@@ -520,7 +520,10 @@ static_assert(sizeof(BaselineScript) % sizeof(uintptr_t) == 0,
 inline bool
 IsBaselineEnabled(JSContext* cx)
 {
-    return false;
+    //SECLAB
+    //return false;
+    //SECLAB
+
 #ifdef JS_CODEGEN_NONE
     return false;
 #else

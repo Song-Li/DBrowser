@@ -45,6 +45,7 @@
 #include <ctime>
 #include <unistd.h>
 #include <thread>
+#include <string.h>
 #include "nsThreadUtils.h"
 //SECLAB END
 
@@ -608,7 +609,6 @@ nsThread::nsThread(MainThreadFlag aMainThread, uint32_t aStackSize)
   , mEventsAreDoomed(false)
   , mIsMainThread(aMainThread)
   , mFlagLock("nsThread.mFlagLock")
-  , mName(PR_GetThreadName(PR_GetCurrentThread()))
 {
   /*Only main thread uses priority queue*/
   mEventsRoot.setIsMain(mIsMainThread == MAIN_THREAD);
@@ -686,7 +686,9 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
   //MessageLoop* ml = MessageLoop::current();
   // We want to leak the reference when we fail to dispatch it, so that
   // we won't release the event in a wrong thread.
-  if(expTime < 0 || expTime - get_counter() > 1000)expTime = get_counter();
+  if(expTime > getPhysicalTime() && expTime - get_counter() > 1000){
+    expTime = get_counter();
+  }
   LeakRefPtr<nsIRunnable> event(Move(aEvent));
   nsCOMPtr<nsIThreadObserver> obs;
 
@@ -774,6 +776,16 @@ nsThread::PutEvent(already_AddRefed<nsIRunnable> aEvent, nsNestedEventTarget* aT
     nsThread* currentThread = ((nsThread*) NS_GetCurrentThread());
     const char *threadName = PR_GetThreadName(PR_GetCurrentThread());
     bool put = true;
+
+    if(!mName.empty() && mName == "Socket Thread" && NS_IsMainThread()){
+      temExpTime = get_counter() + 500;
+      printf("put to %s for %d\n",mName.c_str(), temExpTime);
+    }
+
+    if(!currentThread->mName.empty() && currentThread->mName == "Socket Thread" && mIsMainThread == MAIN_THREAD){
+      printf("back to main %d\n", currentThread->expTime);
+      temExpTime = currentThread->expTime;
+    }
 
     //Non main thread push event into main thread
     if(!NS_IsMainThread() && mIsMainThread == MAIN_THREAD){
@@ -1213,6 +1225,17 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
   LOG(("THRD(%p) ProcessNextEvent [%u %u]\n", this, aMayWait,
        mNestedEventLoopDepth));
 
+  //SECLAB
+  if(mName.empty()){
+    const char* tmpcc =  PR_GetThreadName(PR_GetCurrentThread());
+    char* tmpc = (char*)tmpcc;
+    while(tmpc && *tmpc){
+      mName += *tmpc;
+      tmpc++;
+    }
+  }
+  //SECLAB
+
   if (NS_WARN_IF(PR_GetCurrentThread() != mThread)) {
     return NS_ERROR_NOT_SAME_THREAD;
   }
@@ -1291,6 +1314,11 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
 
       this->expTime = *temExpTime;
 
+      if(!mName.empty() && mName == "Socket Thread"){
+
+        printf("%s, %d, %d\n",mName.c_str(), this->expTime, get_counter());
+      }
+
       bool run = true;
 
       if (MAIN_THREAD == mIsMainThread) {
@@ -1334,6 +1362,7 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult)
           }
         }
         else{
+          if(*temExpTime > get_counter())printf("set %d\n", *temExpTime);
           set_counter(*temExpTime);
         }
       }

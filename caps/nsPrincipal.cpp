@@ -33,6 +33,10 @@
 #include "nsIAppsService.h"
 #include "mozIApplication.h"
 
+//SECLAB
+#include "../js/src/vm/Counter.h"
+//SECLAB
+
 using namespace mozilla;
 
 static bool gIsWhitelistingTestDomains = false;
@@ -77,7 +81,7 @@ nsPrincipal::nsPrincipal()
 { }
 
 nsPrincipal::~nsPrincipal()
-{ 
+{
   // let's clear the principal within the csp to avoid a tangling pointer
   if (mCSP) {
     static_cast<nsCSPContext*>(mCSP.get())->clearLoadingPrincipal();
@@ -247,6 +251,21 @@ nsPrincipal::GetURI(nsIURI** aURI)
 bool
 nsPrincipal::MayLoadInternal(nsIURI* aURI)
 {
+  //SECLAB
+  printf("MayLoadInternal\n");
+  nsAutoCString domain;
+  aURI->GetHost(domain);
+  nsCOMPtr<nsINetUtil> util = do_GetNetUtil();
+
+  bool isFile;
+
+
+  printf("MayLoadInternal check local %s, %d\n", domain.get(),util && NS_SUCCEEDED(util->ProtocolHasFlags(aURI,
+                                nsIProtocolHandler::URI_IS_LOCAL_FILE,
+                                &isFile)) &&
+         isFile);
+  //SECLAB
+
   // See if aURI is something like a Blob URI that is actually associated with
   // a principal.
   nsCOMPtr<nsIURIWithPrincipal> uriWithPrin = do_QueryInterface(aURI);
@@ -258,15 +277,23 @@ nsPrincipal::MayLoadInternal(nsIURI* aURI)
     return nsIPrincipal::Subsumes(uriPrin);
   }
 
+  printf("MayLoadInternal 1\n");
+
   // If this principal is associated with an addon, check whether that addon
   // has been given permission to load from this domain.
   if (AddonAllowsLoad(aURI)) {
     return true;
   }
 
+  printf("MayLoadInternal 2\n");
+
   if (nsScriptSecurityManager::SecurityCompareURIs(mCodebase, aURI)) {
     return true;
   }
+
+  cross_origin = true;
+
+  printf("set cross_origin true\n");
 
   // If strict file origin policy is in effect, local files will always fail
   // SecurityCompareURIs unless they are identical. Explicitly check file origin
@@ -335,6 +362,7 @@ nsPrincipal::SetDomain(nsIURI* aDomain)
 NS_IMETHODIMP
 nsPrincipal::GetBaseDomain(nsACString& aBaseDomain)
 {
+
   // For a file URI, we return the file path.
   if (NS_URIIsLocalFile(mCodebase)) {
     nsCOMPtr<nsIURL> url = do_QueryInterface(mCodebase);

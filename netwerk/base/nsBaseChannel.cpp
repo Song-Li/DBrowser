@@ -230,6 +230,7 @@ nsBaseChannel::PushStreamConverter(const char *fromType,
 nsresult
 nsBaseChannel::BeginPumpingData()
 {
+
   nsCOMPtr<nsIInputStream> stream;
   nsCOMPtr<nsIChannel> channel;
   nsresult rv = OpenContentStream(true, getter_AddRefs(stream),
@@ -251,7 +252,7 @@ nsBaseChannel::BeginPumpingData()
   // call to AsyncRead results in the stream's AsyncWait method being called)
   // and especially when we call into the loadgroup.  Our caller takes care to
   // release mPump if we return an error.
- 
+
   rv = nsInputStreamPump::Create(getter_AddRefs(mPump), stream, -1, -1, 0, 0,
                                  true);
   if (NS_SUCCEEDED(rv))
@@ -505,7 +506,7 @@ nsBaseChannel::SetNotificationCallbacks(nsIInterfaceRequestor *aCallbacks)
   return NS_OK;
 }
 
-NS_IMETHODIMP 
+NS_IMETHODIMP
 nsBaseChannel::GetSecurityInfo(nsISupports **aSecurityInfo)
 {
   NS_IF_ADDREF(*aSecurityInfo = mSecurityInfo);
@@ -752,7 +753,7 @@ NS_IMETHODIMP
 nsBaseChannel::GetInterface(const nsIID &iid, void **result)
 {
   NS_QueryNotificationCallbacks(mCallbacks, mLoadGroup, iid, result);
-  return *result ? NS_OK : NS_ERROR_NO_INTERFACE; 
+  return *result ? NS_OK : NS_ERROR_NO_INTERFACE;
 }
 
 //-----------------------------------------------------------------------------

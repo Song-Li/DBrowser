@@ -1,21 +1,23 @@
 var res_array = [];
 var count = {};
-var payload = 105; 
+var payload = 5; 
 var cur = 0;
 var pre_start = 0;
 var ran = 0;
 var avg = [];
 
 function run(file_name) {
+  for(var i = 0; i < 100; i++);
   var element_s = document.createElement('script');
   //document.getElementById("extra").innerHTML += start + ',';
   document.body.appendChild(element_s);
-  element_s.src = file_name;
+  element_s.src = "http://127.0.0.1:8081/" + file_name;
   start = performance.now();
   window.onerror = function(e) {
     cur ++;
     var end = performance.now();
     var res = end - start;
+    console.log(start, end, end-start);
     console.log(start, end, end-start);
     //document.getElementById("extra").innerHTML += start + ',' + end + ',' + res + '<br>';
     if(addToRes(res)) run(file_name);

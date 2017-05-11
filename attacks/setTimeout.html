@@ -4,19 +4,53 @@
 
 <p id="demo"></p>
 <p id="time"></p>
+<p id="test"></p>
+<p id="start"></p>
+<p id="end"></p>
 
 <script>
 var start = performance.now();
-setTimeout(myFunction1, 1000);
+setTimeout(myFunction3, 1000);
 
 var i = 1;
+var start;
+var end;
+window.counter = 0;
 
 function myFunction1() {
     var end = performance.now();
+    //ret = myFunction2(i);
     document.getElementById("time").innerHTML = end - start;
     document.getElementById("demo").innerHTML = i++;
+    //document.getElementById("test").innerHTML = ret;
     start = end;
-    setTimeout(myFunction1, 1000);
+    setTimeout(myFunction3, 1000);
+}
+
+function myFunction2() {
+    //console.log("dddd" + i);
+    start = performance.now();
+    window.counter++;
+    for(var j = 0; j < i; j++){
+        //console.log("dd");
+        for(var z = 0; z < 1e6; z++);
+    }
+    end = performance.now();
+    document.getElementById("time").innerHTML = end - start;
+    document.getElementById("start").innerHTML = start;
+    document.getElementById("end").innerHTML = end;
+    document.getElementById("demo").innerHTML = window.counter;
+    setTimeout(myFunction2, 1000);
+}
+
+function loop(){
+}
+
+function myFunction3() {
+    for(var z = 0; z < 1e6; z++){
+        test();
+    }
+    setTimeout(myFunction3, 1000);
 }
 </script>
 

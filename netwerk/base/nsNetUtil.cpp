@@ -1801,9 +1801,18 @@ NS_SecurityCompareURIs(nsIURI *aSourceURI,
 bool
 NS_URIIsLocalFile(nsIURI *aURI)
 {
+  nsAutoCString domain;
+  aURI->GetHost(domain);
   nsCOMPtr<nsINetUtil> util = do_GetNetUtil();
 
   bool isFile;
+
+
+  printf("check local %s, %d\n", domain.get(),util && NS_SUCCEEDED(util->ProtocolHasFlags(aURI,
+                                nsIProtocolHandler::URI_IS_LOCAL_FILE,
+                                &isFile)) &&
+         isFile);
+
   return util && NS_SUCCEEDED(util->ProtocolHasFlags(aURI,
                                 nsIProtocolHandler::URI_IS_LOCAL_FILE,
                                 &isFile)) &&

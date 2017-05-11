@@ -1539,6 +1539,7 @@ nsScriptLoader::ProcessScriptElement(nsIScriptElement *aElement)
     NS_GetMainThread((nsIThread**)(&mainThread));
     if(NS_GetCurrentThread() == mainThread && !isSystem){
       this->expTime = get_counter() + 1000;
+      request->expTime = get_counter() + 1000;
       mainThread->putFlag(this->expTime);
     }
     isSystem = true;
@@ -1845,14 +1846,6 @@ nsScriptLoader::AttemptAsyncScriptCompile(nsScriptLoadRequest* aRequest)
   RefPtr<NotifyOffThreadScriptLoadCompletedRunnable> runnable =
     new NotifyOffThreadScriptLoadCompletedRunnable(aRequest, this);
 
-  //SECLAB
-  nsThread* mainThread;
-  NS_GetMainThread((nsIThread**)(&mainThread));
-  if(this->expTime < 0 || this->expTime > get_counter() + 1000)this->expTime = get_counter();
-  mainThread->expTime = this->expTime;
-  printf("nsScriptLoader set expTime %d, %d\n", this->expTime, get_counter());
-  //SECLAB
-
   if (aRequest->IsModuleRequest()) {
 
     if (!JS::CompileOffThreadModule(cx, options,
@@ -1874,6 +1867,20 @@ nsScriptLoader::AttemptAsyncScriptCompile(nsScriptLoadRequest* aRequest)
   aRequest->mProgress = nsScriptLoadRequest::Progress::Compiling;
 
   Unused << runnable.forget();
+
+  //SECLAB
+  nsThread* mainThread;
+  NS_GetMainThread((nsIThread**)(&mainThread));
+  if(this->expTime < 0 || this->expTime > get_counter() + 1000)this->expTime = get_counter();
+  printf("set C %d\n",this->expTime);
+  if(cross_origin){
+    mainThread->expTime = getPhysicalTime();
+    cross_origin = false;
+  }else{
+    mainThread->expTime = aRequest->expTime;
+  }
+  //SECLAB
+
   return NS_OK;
 }
 

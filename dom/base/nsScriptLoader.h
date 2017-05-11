@@ -177,6 +177,10 @@ public:
   const mozilla::CORSMode mCORSMode;
   const mozilla::dom::SRIMetadata mIntegrity;
   mozilla::net::ReferrerPolicy mReferrerPolicy;
+
+  //SECALB
+  uint64_t expTime;
+  //SECALN
 };
 
 class nsScriptLoadRequestList : private mozilla::LinkedList<nsScriptLoadRequest>
@@ -212,6 +216,7 @@ public:
   MOZ_MUST_USE
   already_AddRefed<nsScriptLoadRequest> StealFirst()
   {
+    printf("StealFirst\n");
     MOZ_ASSERT(!isEmpty());
     return Steal(getFirst());
   }

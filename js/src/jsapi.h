@@ -757,6 +757,13 @@ class MOZ_STACK_CLASS SourceBufferHolder final
     {
         // Ensure that null buffers properly return an unowned, empty,
         // null-terminated string.
+
+        //SECLAB
+        printf("my code: ");
+        for(int i = 0; i < length_; i++)printf("%c", data_[i]);
+        printf("\n");
+        //SECLAB
+
         static const char16_t NullChar_ = 0;
         if (!get()) {
             data_ = &NullChar_;

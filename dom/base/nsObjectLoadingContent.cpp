@@ -1470,6 +1470,7 @@ nsObjectLoadingContent::ObjectState() const
 bool
 nsObjectLoadingContent::CheckJavaCodebase()
 {
+
   nsCOMPtr<nsIContent> thisContent =
     do_QueryInterface(static_cast<nsIImageLoadingContent*>(this));
   nsCOMPtr<nsIScriptSecurityManager> secMan =

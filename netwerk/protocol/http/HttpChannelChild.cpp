@@ -1106,9 +1106,9 @@ HttpChannelChild::FailedAsyncOpen(const nsresult& status)
   if (mIPCOpen) {
     PHttpChannelChild::Send__delete__(this);
   }
-  // WARNING:  DO NOT RELY ON |THIS| EXISTING ANY MORE! 
-  // 
-  // NeckoChild::DeallocPHttpChannelChild() may have been called, which deletes 
+  // WARNING:  DO NOT RELY ON |THIS| EXISTING ANY MORE!
+  //
+  // NeckoChild::DeallocPHttpChannelChild() may have been called, which deletes
   // |this| if IPDL holds the last reference.
 }
 
@@ -1837,9 +1837,11 @@ HttpChannelChild::AsyncOpen(nsIStreamListener *listener, nsISupports *aContext)
 NS_IMETHODIMP
 HttpChannelChild::AsyncOpen2(nsIStreamListener *aListener)
 {
+  printf("begin http child AsyncOpen2\n");
   nsCOMPtr<nsIStreamListener> listener = aListener;
   nsresult rv = nsContentSecurityManager::doContentSecurityCheck(this, listener);
   NS_ENSURE_SUCCESS(rv, rv);
+  printf("end http child AsyncOpen2\n");
   return AsyncOpen(listener, nullptr);
 }
 

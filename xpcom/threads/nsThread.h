@@ -50,7 +50,7 @@ public:
 
   std::set<std::string> nameSet;
 
-  const char* mName;
+  std::string mName;
   //SECLAB END
 
   enum MainThreadFlag

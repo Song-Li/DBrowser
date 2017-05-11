@@ -175,9 +175,9 @@ EnterBaseline(JSContext* cx, EnterJitData& data)
         MOZ_ASSERT(data.maxArgv[0].isObject());
         data.result = data.maxArgv[0];
         /*SECLAB Execute the JIT part(Baseline part) Add Counter*/
-        printf("        Baseline part: %ld  Before add\n", get_counter());
-        inc_counter(1);
-        printf("        Baseline part: %ld  After add\n", get_counter());
+        //printf("        Baseline part: %ld  Before add\n", get_counter());
+        //inc_counter(1);
+        //printf("        Baseline part: %ld  After add\n", get_counter());
         /*SECLAB Execute the JIT part(Baseline part) Add Counter*/
     }
 

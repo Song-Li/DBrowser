@@ -87,6 +87,8 @@ bool inc_flag = true;
 
 int isNow = 0;
 
+bool cross_origin = false;
+
 volatile uint64_t physical_base = 0;
 
 uint64_t getJSThread(){
@@ -94,7 +96,7 @@ uint64_t getJSThread(){
 }
 
 void inc_counter(uint64_t args, JSContext* cx) {
-    if(!inc_flag)return;
+    //if(!inc_flag)return;
     if(physical_base == 0){
       struct timeval tp;
       gettimeofday(&tp, NULL);
@@ -162,6 +164,17 @@ void setNow(bool now){
 
 uint64_t getPhysicalBase(){
     return physical_base;
+}
+
+uint64_t getPhysicalTime(){
+    if(physical_base == 0)return counter;
+    struct timeval tp;
+    uint64_t physical_time;
+    gettimeofday(&tp, NULL);
+    physical_time = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+    physical_time -= physical_base;
+    physical_time *= 1000;
+    return physical_time;
 }
 /*SECLAB-END*/
 
@@ -520,25 +533,49 @@ js::RunScript(JSContext* cx, RunState& state)
     js::AutoStopwatch stopwatch(cx);
 #endif // defined(MOZ_HAVE_RDTSC)
 
+     printf("run script %d\n", state.script()->mCodeCount);
+
     SPSEntryMarker marker(cx->runtime(), state.script());
 
     state.script()->ensureNonLazyCanonicalFunction(cx);
 
     if (jit::IsIonEnabled(cx)) {
+
         jit::MethodStatus status = jit::CanEnter(cx, state);
         if (status == jit::Method_Error)
             return false;
         if (status == jit::Method_Compiled) {
+
+     //SECLAB
+     printf("Ion enable %d\n", state.script()->mCodeCount);
+    if(state.script()->mCodeCount > 0){
+        printf("Ion increase %d %d\n", state.script()->mCodeCount, get_counter());
+        inc_counter(state.script()->mCodeCount);
+        printf("after %d\n", get_counter());
+    }else inc_counter(10);
+    //SECLAB
+
             jit::JitExecStatus status = jit::IonCannon(cx, state);
             return !IsErrorStatus(status);
         }
     }
 
     if (jit::IsBaselineEnabled(cx)) {
+
         jit::MethodStatus status = jit::CanEnterBaselineMethod(cx, state);
         if (status == jit::Method_Error)
             return false;
         if (status == jit::Method_Compiled) {
+
+     //SECLAB
+     printf("Baseline enable %d\n", state.script()->mCodeCount);
+    if(state.script()->mCodeCount > 0){
+        printf("Baseline increase %d %d\n", state.script()->mCodeCount, get_counter());
+        inc_counter(state.script()->mCodeCount);
+        printf("after %d\n", get_counter());
+    }else inc_counter(10);
+    //SECLAB
+
             jit::JitExecStatus status = jit::EnterBaselineMethod(cx, state);
             return !IsErrorStatus(status);
         }
@@ -564,7 +601,7 @@ js::RunScript(JSContext* cx, RunState& state)
             isSystem = true;
           else
             isSystem = false;*/
-          //if (srcJS)printf("thread %lx, isSystem: %d, code: %s\n", pthread_self(), isSystem,  JS_EncodeString(cx, srcJS));
+          //if (srcJS)printf("thread %lx, isSystem: %d, code: %s\n", pthread_self(), isSystem,  srcJS);
         }
     }
 
